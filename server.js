@@ -10,7 +10,7 @@ loadEnv();
 
 const publicDir = path.join(__dirname, "public");
 const port = Number(process.env.PORT || 4173);
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -29,6 +29,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/source-status") {
       return sendJson(res, 200, getSourceStatus());
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/health") {
+      return sendJson(res, 200, {
+        ok: true,
+        service: "adtrendradar",
+        generatedAt: new Date().toISOString()
+      });
     }
 
     if (req.method === "GET" && url.pathname === "/api/api-check") {

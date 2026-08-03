@@ -14,6 +14,30 @@ npm start
 http://localhost:4173
 ```
 
+## Deploy to adradarhub.com
+
+This project is configured for a Render Node Web Service with `render.yaml`.
+
+1. Push this repository to GitHub.
+2. Open Render and create a new Blueprint from `https://github.com/Mireia9868/adradarhub`.
+3. Set the service environment variables in Render:
+   - `META_ACCESS_TOKEN`
+   - `GOOGLE_TRANSPARENCY_ENDPOINT`
+   - `TRANSPARENCY_CONNECTOR_TOKEN`
+4. After the Render service is live, add these custom domains in Render:
+   - `adradarhub.com`
+   - `www.adradarhub.com`
+5. In your Wix Domains DNS panel, point the domain to the DNS records Render shows for those two custom domains.
+
+For a Wix-purchased domain, open `https://manage.wix.com/account/domains`, select `adradarhub.com`, then manage DNS records:
+
+- Add or update the root/apex `A` record for `@` to Render's IP address shown in Render.
+- Add or update the `CNAME` record for `www` to the Render service hostname shown in Render, usually ending with `.onrender.com`.
+- Remove conflicting `A`, `CNAME`, or `AAAA` records for `@` and `www` if Wix shows conflicts.
+- Keep Wix as the registrar; you do not need to transfer the domain away from Wix.
+
+The app exposes `/api/health` for Render health checks.
+
 ## Check API connections
 
 填完 `.env` 后先跑：

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: adradarhub
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    domains:
+      - adradarhub.com
+      - www.adradarhub.com
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CONNECTOR_TIMEOUT_MS
+        value: "15000"
+      - key: CONNECTOR_CURL_FALLBACK
+        value: "true"
+      - key: BING_AD_LIBRARY_DIRECT
+        value: "true"
+      - key: BING_AD_LIBRARY_LIMIT
+        value: "30"
+      - key: BING_AD_LIBRARY_BASE_URL
+        value: https://adlibrary.api.bingads.microsoft.com/api/v1/Ads
+      - key: META_ACCESS_TOKEN
+        sync: false
+      - key: GOOGLE_TRANSPARENCY_ENDPOINT
+        sync: false
+      - key: TRANSPARENCY_CONNECTOR_TOKEN
+        sync: false

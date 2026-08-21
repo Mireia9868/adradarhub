@@ -34,6 +34,10 @@
             <span aria-hidden="true">⟳</span>
             <span>素材迭代</span>
           </button>
+          <button class="nav-item" data-section="generate" title="Generate">
+            <span aria-hidden="true">✦</span>
+            <span>素材生成</span>
+          </button>
           <button class="nav-item" data-section="sources" title="Sources">
             <span aria-hidden="true">◎</span>
             <span>数据源</span>
@@ -251,6 +255,43 @@ Google 标题覆盖高意图关键词
               </div>
             </div>
             <div id="backlogList" class="backlog-list"></div>
+          </section>
+
+          <section class="panel span-12" data-panel="generate">
+            <div class="panel-header">
+              <div>
+                <h2>素材生成 · Qwen 文生图</h2>
+                <p>输入创意提示词，调用 Qwen 图像模型生成广告素材（密钥由服务端注入，不暴露在浏览器）。</p>
+              </div>
+              <span id="genStatus" class="mini-label"></span>
+            </div>
+
+            <form id="genForm" class="iteration-form">
+              <label class="field wide-field" style="grid-column: span 12">
+                <span>提示词 (Prompt)</span>
+                <textarea id="genPrompt" rows="4" placeholder="例如：写实风格户外家居广告，暖色调，阳光洒在庭院，产品居中，留白充足，适合 Meta 信息流"></textarea>
+              </label>
+              <label class="field" style="grid-column: span 4">
+                <span>负面提示词（可选）</span>
+                <input id="genNegative" type="text" placeholder="如：文字、水印、变形、低质" />
+              </label>
+              <label class="field" style="grid-column: span 4">
+                <span>画面比例</span>
+                <select id="genSize">
+                  <option value="1664*928">16:9 横版</option>
+                  <option value="1472*1104">4:3</option>
+                  <option value="1328*1328">1:1 方图</option>
+                  <option value="1104*1472">3:4</option>
+                  <option value="928*1664">9:16 竖版</option>
+                </select>
+              </label>
+              <button class="run-button" id="genButton" type="submit" style="grid-column: span 4">
+                <span aria-hidden="true">✦</span>
+                <span>生成素材</span>
+              </button>
+            </form>
+
+            <div id="genResults" class="gen-results"></div>
           </section>
         </section>
       </main>

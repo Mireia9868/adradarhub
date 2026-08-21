@@ -30,3 +30,7 @@ services:
         sync: false
       - key: TRANSPARENCY_CONNECTOR_TOKEN
         sync: false
+      - key: QWEN_API_KEY
+        sync: false
+      - key: QWEN_API_BASE_URL
+        value: https://dashscope-intl.aliyuncs.com/api/v1

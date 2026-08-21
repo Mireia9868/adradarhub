@@ -21,6 +21,13 @@ const signalList = document.querySelector("#signalList");
 const iterationSummary = document.querySelector("#iterationSummary");
 const backlogList = document.querySelector("#backlogList");
 const adTemplate = document.querySelector("#adCardTemplate");
+const genForm = document.querySelector("#genForm");
+const genButton = document.querySelector("#genButton");
+const genPrompt = document.querySelector("#genPrompt");
+const genNegative = document.querySelector("#genNegative");
+const genSize = document.querySelector("#genSize");
+const genResults = document.querySelector("#genResults");
+const genStatus = document.querySelector("#genStatus");
 const runButton = document.querySelector(".run-button");
 const iterationForm = document.querySelector("#iterationForm");
 const iterationButton = document.querySelector("#iterationButton");
@@ -56,6 +63,11 @@ csvFile.addEventListener("change", async () => {
   runIteration();
 });
 
+genForm.addEventListener("submit", event => {
+  event.preventDefault();
+  runGenerate();
+});
+
 document.querySelectorAll(".segment").forEach(button => {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter;
@@ -77,8 +89,10 @@ document.querySelectorAll(".nav-item").forEach(button => {
           ? trendList
           : section === "iteration"
             ? document.querySelector('[data-panel="iteration"]')
-            : section === "sources"
-              ? sourceList
+            : section === "generate"
+              ? document.querySelector('[data-panel="generate"]')
+              : section === "sources"
+                ? sourceList
               : document.querySelector(".metric-grid");
     target.scrollIntoView({ behavior: "smooth", block: "start" });
   });
@@ -171,6 +185,53 @@ async function runIteration() {
     requirementList.innerHTML = `<div class="empty-state">无法生成迭代：${escapeHtml(error.message)}</div>`;
   } finally {
     setIterationLoading(false);
+  }
+}
+
+async function runGenerate() {
+  const prompt = genPrompt.value.trim();
+  if (!prompt) {
+    genStatus.textContent = "请先输入提示词";
+    genResults.innerHTML = '<div class="empty-state">输入提示词后再生成。</div>';
+    return;
+  }
+
+  genButton.disabled = true;
+  genButton.querySelector("span:last-child").textContent = "生成中…";
+  genStatus.textContent = "Qwen 正在生成，约 10–40 秒";
+  genResults.innerHTML = '<div class="empty-state">生成中，请稍候…</div>';
+
+  try {
+    const response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        negativePrompt: genNegative.value.trim(),
+        size: genSize.value
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "生成失败");
+    }
+
+    genResults.innerHTML = data.images
+      .map(
+        url => `
+        <figure class="gen-card">
+          <img src="${escapeHtml(url)}" alt="生成素材" loading="lazy" />
+          <figcaption><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">打开原图</a></figcaption>
+        </figure>`
+      )
+      .join("");
+    genStatus.textContent = `完成，已生成 ${data.images.length} 张`;
+  } catch (error) {
+    genStatus.textContent = "生成失败";
+    genResults.innerHTML = `<div class="empty-state">生成失败：${escapeHtml(error.message)}</div>`;
+  } finally {
+    genButton.disabled = false;
+    genButton.querySelector("span:last-child").textContent = "生成素材";
   }
 }
 

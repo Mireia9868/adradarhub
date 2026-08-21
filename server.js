@@ -5,6 +5,7 @@ const { loadEnv } = require("./src/env");
 const { createIntelReport, getSourceStatus } = require("./src/intel");
 const { checkApiConnections } = require("./src/apiHealth");
 const { createIterationPlan } = require("./src/iteration");
+const { generateImage } = require("./src/qwenImage");
 
 loadEnv();
 
@@ -59,6 +60,23 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const plan = createIterationPlan(body);
       return sendJson(res, 200, plan);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/generate-image") {
+      const body = await readJson(req);
+      try {
+        const images = await generateImage({
+          prompt: body.prompt,
+          negativePrompt: body.negativePrompt,
+          size: body.size,
+          model: body.model
+        });
+        return sendJson(res, 200, { images });
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, {
+          error: err.message
+        });
+      }
     }
 
     if (req.method !== "GET") {

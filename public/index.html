@@ -266,6 +266,43 @@ Google 标题覆盖高意图关键词
               <span id="genStatus" class="mini-label"></span>
             </div>
 
+            <div class="gen-helper">
+              <div class="gen-helper-head">
+                <div>
+                  <h3>DeepSeek 提示词 / 文案器</h3>
+                  <p>输入粗略想法，由 DeepSeek 扩写成精修文生图提示词与广告文案（纯文本，不消耗生图额度），再一键交给 Qwen 出图。</p>
+                </div>
+                <span class="mini-label">文本由 DeepSeek 生成</span>
+              </div>
+              <div class="gen-helper-body">
+                <label class="field wide-field">
+                  <span>粗略想法 / 核心卖点</span>
+                  <textarea id="dsIdea" rows="3" placeholder="例如：户外藤编收纳篮，主打小户型阳台收纳，温暖自然风，体现防晒耐候"></textarea>
+                </label>
+                <label class="field">
+                  <span>目标平台</span>
+                  <select id="dsPlatform">
+                    <option value="Meta">Meta（信息流 / 短视频）</option>
+                    <option value="Google">Google（搜索 / 展示）</option>
+                    <option value="Bing">Bing</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>画面比例</span>
+                  <select id="dsSize">
+                    <option value="1664*928">16:9 横版</option>
+                    <option value="1328*1328">1:1 方图</option>
+                    <option value="928*1664">9:16 竖版</option>
+                  </select>
+                </label>
+                <button class="run-button" id="dsButton" type="button">
+                  <span aria-hidden="true">✎</span>
+                  <span>DeepSeek 生成提示词+文案</span>
+                </button>
+              </div>
+              <div id="dsOutput" class="ds-output" hidden></div>
+            </div>
+
             <form id="genForm" class="iteration-form">
               <label class="field wide-field" style="grid-column: span 12">
                 <span>提示词 (Prompt)</span>

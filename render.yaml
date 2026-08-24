@@ -34,3 +34,7 @@ services:
         sync: false
       - key: QWEN_API_BASE_URL
         value: https://dashscope-intl.aliyuncs.com/api/v1
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_BASE_URL
+        value: https://api.deepseek.com

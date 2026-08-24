@@ -6,6 +6,7 @@ const { createIntelReport, getSourceStatus } = require("./src/intel");
 const { checkApiConnections } = require("./src/apiHealth");
 const { createIterationPlan } = require("./src/iteration");
 const { generateImage } = require("./src/qwenImage");
+const { chatCompletion } = require("./src/deepseek");
 
 loadEnv();
 
@@ -72,6 +73,24 @@ const server = http.createServer(async (req, res) => {
           model: body.model
         });
         return sendJson(res, 200, { images });
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, {
+          error: err.message
+        });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/llm") {
+      const body = await readJson(req);
+      try {
+        const text = await chatCompletion({
+          system: body.system,
+          prompt: body.prompt,
+          model: body.model,
+          temperature: body.temperature,
+          maxTokens: body.maxTokens
+        });
+        return sendJson(res, 200, { text });
       } catch (err) {
         return sendJson(res, err.statusCode || 500, {
           error: err.message

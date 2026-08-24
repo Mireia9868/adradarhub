@@ -28,6 +28,11 @@ const genNegative = document.querySelector("#genNegative");
 const genSize = document.querySelector("#genSize");
 const genResults = document.querySelector("#genResults");
 const genStatus = document.querySelector("#genStatus");
+const dsIdea = document.querySelector("#dsIdea");
+const dsPlatform = document.querySelector("#dsPlatform");
+const dsSize = document.querySelector("#dsSize");
+const dsButton = document.querySelector("#dsButton");
+const dsOutput = document.querySelector("#dsOutput");
 const runButton = document.querySelector(".run-button");
 const iterationForm = document.querySelector("#iterationForm");
 const iterationButton = document.querySelector("#iterationButton");
@@ -67,6 +72,8 @@ genForm.addEventListener("submit", event => {
   event.preventDefault();
   runGenerate();
 });
+
+dsButton.addEventListener("click", runDeepSeek);
 
 document.querySelectorAll(".segment").forEach(button => {
   button.addEventListener("click", () => {
@@ -186,6 +193,75 @@ async function runIteration() {
   } finally {
     setIterationLoading(false);
   }
+}
+
+async function runDeepSeek() {
+  const idea = dsIdea.value.trim();
+  if (!idea) {
+    dsOutput.hidden = false;
+    dsOutput.innerHTML = '<div class="empty-state">请先输入粗略想法或核心卖点。</div>';
+    return;
+  }
+  const platform = dsPlatform.value;
+  const size = dsSize.value;
+
+  dsButton.disabled = true;
+  dsButton.querySelector("span:last-child").textContent = "生成中…";
+  dsOutput.hidden = false;
+  dsOutput.innerHTML = '<div class="empty-state">DeepSeek 正在撰写提示词与文案，约 5–20 秒…</div>';
+
+  try {
+    const system =
+      "你是资深海外广告创意总监，擅长把简短卖点扩写成可直接用于文生图模型的提示词以及配套广告文案。输出结构清晰、可直接复制。";
+    const prompt = [
+      `产品 / 卖点：${idea}`,
+      `目标平台：${platform}`,
+      `计划生成的画面比例：${size}`,
+      "",
+      "请使用 Markdown 输出以下内容：",
+      "1. **文生图提示词（中文，给 Qwen 用）**：在此冒号后直接写提示词，含主体、场景、光线、构图、色调、留白，控制在 80 字以内。",
+      "2. **英文提示词（English prompt）**：上面中文提示词的英文版，给海外模型使用。",
+      "3. **广告文案**：3 个标题（含钩子）+ 1 句主文案 + 1 个 CTA。",
+      "4. **风格与避坑**：1-2 句该平台素材应注意的视觉与合规要点。"
+    ].join("\n");
+
+    const response = await fetch("/api/llm", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ system, prompt, model: "deepseek-v4-flash", temperature: 0.8 })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "生成失败");
+    }
+
+    const cnPrompt = extractCnPrompt(data.text);
+    dsOutput.innerHTML = `
+      <div class="ds-result-head">
+        <strong>DeepSeek 生成结果</strong>
+        <button class="ghost-button" id="useDsPrompt" type="button">用此提示词生成图片 →</button>
+      </div>
+      <pre class="ds-markdown">${escapeHtml(data.text)}</pre>
+    `;
+    document.querySelector("#useDsPrompt").addEventListener("click", () => {
+      genPrompt.value = cnPrompt || idea;
+      genSize.value = size;
+      runGenerate();
+    });
+  } catch (error) {
+    dsOutput.innerHTML = `<div class="empty-state">生成失败：${escapeHtml(error.message)}</div>`;
+  } finally {
+    dsButton.disabled = false;
+    dsButton.querySelector("span:last-child").textContent = "DeepSeek 生成提示词+文案";
+  }
+}
+
+function extractCnPrompt(text) {
+  const match = String(text || "").match(/文生图提示词（中文[^\n]*?[:：]\s*([^\n]+)/);
+  if (match) {
+    return match[1].trim().replace(/^[\s>*#\-]+/, "");
+  }
+  return "";
 }
 
 async function runGenerate() {

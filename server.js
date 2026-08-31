@@ -7,6 +7,7 @@ const { checkApiConnections } = require("./src/apiHealth");
 const { createIterationPlan } = require("./src/iteration");
 const { generateImage } = require("./src/qwenImage");
 const { chatCompletion } = require("./src/deepseek");
+const { handleGoogleConnector } = require("./src/connectors/googleConnector");
 
 loadEnv();
 
@@ -95,6 +96,16 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.statusCode || 500, {
           error: err.message
         });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/google-connector") {
+      const body = await readJson(req);
+      try {
+        const result = await handleGoogleConnector(body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 500, { error: err.message });
       }
     }
 

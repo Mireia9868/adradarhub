@@ -21,7 +21,7 @@ services:
       - key: BING_AD_LIBRARY_DIRECT
         value: "true"
       - key: BING_AD_LIBRARY_LIMIT
-        value: "30"
+        value: "24"
       - key: BING_AD_LIBRARY_BASE_URL
         value: https://adlibrary.api.bingads.microsoft.com/api/v1/Ads
       - key: META_ACCESS_TOKEN

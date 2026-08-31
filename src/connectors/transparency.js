@@ -151,7 +151,10 @@ async function fetchMetaAdsLibrary(query) {
   url.searchParams.set("ad_active_status", process.env.META_AD_ACTIVE_STATUS || "ALL");
   url.searchParams.set("ad_reached_countries", JSON.stringify(query.markets || ["US"]));
   url.searchParams.set("ad_delivery_date_min", dateDaysAgo(query.sinceDays));
-  url.searchParams.set("limit", process.env.META_AD_LIBRARY_LIMIT || "30");
+  const metaMaxTop = 25; // Meta Ads Archive API caps `limit` at 25
+  const metaRequested = Number(process.env.META_AD_LIBRARY_LIMIT || "25");
+  const metaTop = Math.min(Math.max(Number.isFinite(metaRequested) ? metaRequested : 25, 1), metaMaxTop);
+  url.searchParams.set("limit", String(metaTop));
   url.searchParams.set(
     "fields",
     [
@@ -182,7 +185,10 @@ async function fetchMetaAdsLibrary(query) {
 
 async function fetchMicrosoftAdLibrary(query) {
   const url = new URL(process.env.BING_AD_LIBRARY_BASE_URL || "https://adlibrary.api.bingads.microsoft.com/api/v1/Ads");
-  url.searchParams.set("top", process.env.BING_AD_LIBRARY_LIMIT || "30");
+  const maxTop = 24; // Bing Ad Library API hard-caps $top at 24
+  const requestedTop = Number(process.env.BING_AD_LIBRARY_LIMIT || "24");
+  const top = Math.min(Math.max(Number.isFinite(requestedTop) ? requestedTop : 24, 1), maxTop);
+  url.searchParams.set("top", String(top));
   url.searchParams.set("skip", "0");
   url.searchParams.set("searchText", query.brand || query.website.hostname);
   url.searchParams.set("startDate", dateDaysAgo(query.sinceDays));

@@ -87,21 +87,21 @@ document.querySelectorAll(".nav-item").forEach(button => {
     document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
     button.classList.add("active");
     const section = button.dataset.section;
-    const target =
-      section === "ads"
-        ? adsGrid
-        : section === "trends"
-          ? trendList
-          : section === "iteration"
-            ? document.querySelector('[data-panel="iteration"]')
-            : section === "generate"
-              ? document.querySelector('[data-panel="generate"]')
-              : section === "sources"
-                ? sourceList
-              : document.querySelector(".metric-grid");
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    // 一项菜单 = 一个功能页
+    document.querySelectorAll(".page").forEach(page => {
+      page.classList.toggle("active", page.dataset.page === section);
+    });
+    if (history.replaceState) history.replaceState(null, "", "#" + section);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 });
+
+// 支持 #hash 直达对应功能页（如 #ads / #iteration）
+const initialSection = (location.hash || "").replace("#", "");
+if (initialSection) {
+  const navButton = document.querySelector(`.nav-item[data-section="${initialSection}"]`);
+  if (navButton) navButton.click();
+}
 
 loadSourceStatus();
 runIntel();

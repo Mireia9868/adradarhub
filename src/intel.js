@@ -4,6 +4,10 @@ const { createDemoIntel } = require("./mockIntel");
 const DEFAULT_MARKETS = ["US", "GB", "CA", "AU"];
 const DEFAULT_PLATFORMS = ["meta", "google", "bing"];
 
+// 展示优先级：Bing 可直连 Microsoft Ad Library 取真实数据，排最前；
+// Meta / Google 需要 token 或外部 connector，取不到时是演示数据，排后面。
+const AD_PLATFORM_ORDER = { bing: 0, meta: 1, google: 2 };
+
 async function createIntelReport(input) {
   const website = normalizeWebsite(input.website || input.domain || "");
   if (!website) {
@@ -62,7 +66,7 @@ async function createIntelReport(input) {
     summary: summarizeReport(baseReport, liveAds, liveTrends, liveCompetitors),
     competitors: mergeByKey([...liveCompetitors, ...baseReport.competitors], "domain").slice(0, 10),
     trends: rankItems([...liveTrends, ...baseReport.trends], "score").slice(0, 12),
-    ads: rankItems([...liveAds, ...baseReport.ads], "heat").slice(0, 30),
+    ads: rankAds([...liveAds, ...baseReport.ads]).slice(0, 30),
     warnings: [
       ...connectorWarnings,
       {
@@ -137,6 +141,18 @@ function rankItems(items, field) {
   return items
     .filter(Boolean)
     .sort((left, right) => Number(right[field] || 0) - Number(left[field] || 0));
+}
+
+// 先按平台优先级，再按热度降序
+function rankAds(items) {
+  return items
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftRank = AD_PLATFORM_ORDER[left.platform] ?? 3;
+      const rightRank = AD_PLATFORM_ORDER[right.platform] ?? 3;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+      return Number(right.heat || 0) - Number(left.heat || 0);
+    });
 }
 
 function mergeByKey(items, key) {

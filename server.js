@@ -44,7 +44,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/api-check") {
       const checks = await checkApiConnections({
-        website: url.searchParams.get("website") || "garvee.com",
+        website: url.searchParams.get("website") || "readdy.ai",
         markets: url.searchParams.get("markets") || "US",
         platforms: url.searchParams.get("platforms") || "meta,google,bing",
         sinceDays: Number(url.searchParams.get("sinceDays") || 30)

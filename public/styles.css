@@ -434,6 +434,36 @@ button {
   object-fit: cover;
 }
 
+/* 没有图片素材的广告：用文字占位替代示例图，避免多张卡片重复显示同一张图 */
+.ad-creative.no-image {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px;
+  background: linear-gradient(135deg, #eef1ee 0%, #e3eae6 100%);
+}
+
+.ad-creative.no-image::before {
+  content: "无图片素材";
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #8b958f;
+  text-transform: uppercase;
+}
+
+.ad-creative.no-image::after {
+  content: attr(data-placeholder);
+  max-width: 100%;
+  color: #46504d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  word-break: break-word;
+}
+
 .platform-pill {
   position: absolute;
   top: 10px;

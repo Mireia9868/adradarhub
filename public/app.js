@@ -4,11 +4,9 @@ const state = {
   filter: "all"
 };
 
-const creativeFallbacks = {
-  meta: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80",
-  google: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80",
-  bing: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80"
-};
+// 广告展示优先级：Bing（可抓取真实数据）在前，Meta / Google 在后。
+// 后端 /api/intel 已按此顺序返回，这里兜一层，避免直接消费旧数据时顺序被打乱。
+const PLATFORM_ORDER = { bing: 0, meta: 1, google: 2 };
 
 const form = document.querySelector("#intelForm");
 const statusBanner = document.querySelector("#statusBanner");
@@ -313,7 +311,13 @@ async function runGenerate() {
 
 function renderAds() {
   const ads = state.report?.ads || [];
-  const filtered = state.filter === "all" ? ads : ads.filter(ad => ad.platform === state.filter);
+  const sorted = [...ads].sort((a, b) => {
+    const pa = PLATFORM_ORDER[a.platform] ?? 3;
+    const pb = PLATFORM_ORDER[b.platform] ?? 3;
+    if (pa !== pb) return pa - pb;
+    return (b.heat ?? 0) - (a.heat ?? 0);
+  });
+  const filtered = state.filter === "all" ? sorted : sorted.filter(ad => ad.platform === state.filter);
   adsGrid.innerHTML = "";
 
   if (!filtered.length) {
@@ -323,12 +327,22 @@ function renderAds() {
 
   filtered.forEach(ad => {
     const node = adTemplate.content.cloneNode(true);
+    const creative = node.querySelector(".ad-creative");
     const image = node.querySelector("img");
-    image.src = ad.imageUrl || creativeFallbacks[ad.platform] || creativeFallbacks.google;
-    image.alt = `${ad.advertiser} creative`;
-    image.onerror = () => {
-      image.src = creativeFallbacks[ad.platform] || creativeFallbacks.google;
-    };
+    if (ad.imageUrl) {
+      image.src = ad.imageUrl;
+      image.alt = `${ad.advertiser} creative`;
+      image.onerror = () => {
+        image.remove();
+        creative.classList.add("no-image");
+        creative.dataset.placeholder = ad.headline || "无图片素材";
+      };
+    } else {
+      // 该广告没有图片素材，不再套用示例图，改用文字占位
+      image.remove();
+      creative.classList.add("no-image");
+      creative.dataset.placeholder = ad.headline || "无图片素材";
+    }
     node.querySelector(".platform-pill").textContent = ad.platform;
     node.querySelector(".advertiser").textContent = `${ad.advertiser} · ${ad.market} · ${ad.format}`;
     node.querySelector(".heat").textContent = `Heat ${ad.heat}`;

@@ -456,6 +456,10 @@ button {
 .ad-creative.no-image::after {
   content: attr(data-placeholder);
   max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: #46504d;
   font-size: 13px;
   font-weight: 700;

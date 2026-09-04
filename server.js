@@ -5,7 +5,7 @@ const { loadEnv } = require("./src/env");
 const { createIntelReport, getSourceStatus } = require("./src/intel");
 const { checkApiConnections } = require("./src/apiHealth");
 const { createIterationPlan } = require("./src/iteration");
-const { generateImage } = require("./src/qwenImage");
+const { generateImage } = require("./src/imageGen");
 const { chatCompletion } = require("./src/deepseek");
 const { handleGoogleConnector } = require("./src/connectors/googleConnector");
 
@@ -71,7 +71,8 @@ const server = http.createServer(async (req, res) => {
           prompt: body.prompt,
           negativePrompt: body.negativePrompt,
           size: body.size,
-          model: body.model
+          model: body.model,
+          steps: body.steps
         });
         return sendJson(res, 200, { images });
       } catch (err) {

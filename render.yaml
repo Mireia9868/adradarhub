@@ -34,6 +34,10 @@ services:
         sync: false
       - key: QWEN_API_BASE_URL
         value: https://dashscope-intl.aliyuncs.com/api/v1
+      # 外部生图代理（Cloudflare Worker，已部署）。配置后 /api/generate-image 走此端点，
+      # 密钥只存在 Worker 侧；未配置时回退到内置 Qwen（需 QWEN_API_KEY）。
+      - key: IMAGE_GEN_ENDPOINT
+        value: https://adradarhub.mireia9868.workers.dev/generate-image
       - key: DEEPSEEK_API_KEY
         sync: false
       - key: DEEPSEEK_API_BASE_URL

@@ -6,8 +6,13 @@
 // - IMAGE_GEN_ENDPOINT 指向的代理返回 { imageUrl: "data:..." }（内联 base64），
 //   由本模块包成 images 数组，浏览器直接内联渲染，不跳站外、不暴露图源。
 // - 代理密钥只存在 Worker 侧，站点后端只持有 endpoint 地址，密钥不落本仓库。
+// - 默认值指向已部署的 Cloudflare Worker（Qwen 免费额度已耗尽），确保部署后即生效，
+//   不依赖部署平台的 env 同步；如需换回 Qwen，把 IMAGE_GEN_ENDPOINT 设为空并配 QWEN_API_KEY。
 
 const { generateImage: generateViaQwen } = require("./qwenImage");
+
+// 已上线的 Cloudflare Worker 生图代理（公开 URL，非密钥）。
+const DEFAULT_IMAGE_GEN_ENDPOINT = "https://adradarhub.mireia9868.workers.dev/generate-image";
 
 async function postJsonWithTimeout(url, headers, body, timeoutMs) {
   const controller = new AbortController();
@@ -67,7 +72,7 @@ async function generateViaEndpoint({
 }
 
 async function generateImage(input = {}) {
-  const endpoint = process.env.IMAGE_GEN_ENDPOINT;
+  const endpoint = process.env.IMAGE_GEN_ENDPOINT || DEFAULT_IMAGE_GEN_ENDPOINT;
   if (endpoint) {
     return generateViaEndpoint({
       endpoint,

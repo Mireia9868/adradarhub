@@ -6,7 +6,7 @@ const state = {
 
 // 广告展示优先级：Bing（可抓取真实数据）在前，Meta / Google 在后。
 // 后端 /api/intel 已按此顺序返回，这里兜一层，避免直接消费旧数据时顺序被打乱。
-const PLATFORM_ORDER = { bing: 0, youtube: 1, meta: 2, google: 3 };
+const PLATFORM_ORDER = { bing: 0, youtube: 1, tiktok: 2, meta: 3, google: 4 };
 
 const form = document.querySelector("#intelForm");
 const statusBanner = document.querySelector("#statusBanner");
@@ -513,8 +513,8 @@ async function runGenerate() {
 function renderAds() {
   const ads = state.report?.ads || [];
   const sorted = [...ads].sort((a, b) => {
-    const pa = PLATFORM_ORDER[a.platform] ?? 3;
-    const pb = PLATFORM_ORDER[b.platform] ?? 3;
+    const pa = PLATFORM_ORDER[a.platform] ?? 4;
+    const pb = PLATFORM_ORDER[b.platform] ?? 4;
     if (pa !== pb) return pa - pb;
     return (b.heat ?? 0) - (a.heat ?? 0);
   });
@@ -552,8 +552,8 @@ function renderAds() {
     node.querySelector(".source-link").href = ad.sourceUrl || "#";
     node.querySelector(".landing-link").href = ad.landingUrl || "#";
 
-    // YouTube 卡片：追加「生成 Brief」动作
-    if (ad.platform === "youtube" && ad.videoId) {
+    // YouTube / TikTok 视频卡：追加「生成 Brief」动作
+    if ((ad.platform === "youtube" || ad.platform === "tiktok") && ad.videoId) {
       const briefButton = document.createElement("button");
       briefButton.type = "button";
       briefButton.className = "source-link brief-button";
@@ -574,19 +574,22 @@ function renderAds() {
   });
 }
 
-// YouTube 视频一键生成投放 Brief（DeepSeek 生成，未配置 Key 时后端回退规则版模板）
+// 视频情报一键生成投放 Brief（DeepSeek 生成，未配置 Key 时后端回退规则版模板）
 async function runBrief(ad, button) {
   const original = button.textContent;
   button.disabled = true;
   button.textContent = "Brief 生成中…";
   try {
-    const response = await requestWithAuth("/api/youtube/brief", {
-      method: "POST",
-      body: JSON.stringify({
-        videoId: ad.videoId,
-        brand: state.report?.query?.brand || ""
-      })
-    });
+    const response = await requestWithAuth(
+      ad.platform === "tiktok" ? "/api/tiktok/brief" : "/api/youtube/brief",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          videoId: ad.videoId,
+          brand: state.report?.query?.brand || ""
+        })
+      }
+    );
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "brief_failed");
 

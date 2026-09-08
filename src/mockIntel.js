@@ -2,7 +2,8 @@ const sourceUrls = {
   meta: "https://www.facebook.com/ads/library/",
   google: "https://adstransparency.google.com/",
   bing: "https://adlibrary.ads.microsoft.com/",
-  youtube: "https://www.youtube.com/"
+  youtube: "https://www.youtube.com/",
+  tiktok: "https://www.tiktok.com/"
 };
 
 // 家居/电商类演示图（garvee、generic 档案沿用）

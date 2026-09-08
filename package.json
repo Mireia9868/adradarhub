@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check:apis": "node scripts/check-apis.js"
+    "check:apis": "node scripts/check-apis.js",
+    "check:auth": "node scripts/auth-smoke.js && node scripts/auth-e2e.js",
+    "check:tiktok": "node scripts/tiktok-check.js && node scripts/tiktok-integration.js"
   },
   "engines": {
     "node": ">=18"

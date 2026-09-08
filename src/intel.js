@@ -1,14 +1,15 @@
 const { fetchPlatformIntel, getConnectorStatus } = require("./connectors/transparency");
 const { fetchYouTubeIntel, getYoutubeStatus } = require("./connectors/youtubeConnector");
+const { fetchTikTokIntel, getTikTokStatus } = require("./connectors/tiktokConnector");
 const { createDemoIntel } = require("./mockIntel");
 
 const DEFAULT_MARKETS = ["US", "GB", "CA", "AU"];
-const DEFAULT_PLATFORMS = ["meta", "google", "bing", "youtube"];
+const DEFAULT_PLATFORMS = ["meta", "google", "bing", "youtube", "tiktok"];
 
 // 展示优先级：Bing 可直连 Microsoft Ad Library 取真实数据，排最前；
-// YouTube 官方 API Key 即可用，排第二；Meta / Google 需要 token 或外部 connector，
-// 取不到时是演示数据，排后面。
-const AD_PLATFORM_ORDER = { bing: 0, youtube: 1, meta: 2, google: 3 };
+// YouTube 官方 API Key 即可用，排第二；TikTok 走第三方 REST 数据源，排第三；
+// Meta / Google 需要 token 或外部 connector，取不到时是演示数据，排后面。
+const AD_PLATFORM_ORDER = { bing: 0, youtube: 1, tiktok: 2, meta: 3, google: 4 };
 
 async function createIntelReport(input) {
   const website = normalizeWebsite(input.website || input.domain || "");
@@ -30,7 +31,9 @@ async function createIntelReport(input) {
     platforms.map(platform =>
       (platform === "youtube"
         ? fetchYouTubeIntel({ brand, website, markets, sinceDays })
-        : fetchPlatformIntel(platform, { brand, website, markets, sinceDays })
+        : platform === "tiktok"
+          ? fetchTikTokIntel({ brand, website, markets, sinceDays })
+          : fetchPlatformIntel(platform, { brand, website, markets, sinceDays })
       ).catch(error => ({
         platform,
         sourceMode: "demo",
@@ -53,6 +56,12 @@ async function createIntelReport(input) {
     livePlatforms.size > 0
       ? baseReport.ads.filter(ad => !livePlatforms.has(ad.platform))
       : baseReport.ads;
+
+  // 趋势与竞品同理：只要有一个平台取到了 live 数据，就不再混入演示趋势/演示竞品。
+  // 之前只清了演示广告卡，结果演示趋势把真实趋势在 slice(0,12) 里挤掉了，
+  // TikTok 的话题标签只露出最高分一条——和"真数据被假数据淹没"是同一类问题。
+  const demoTrends = livePlatforms.size > 0 ? [] : baseReport.trends;
+  const demoCompetitors = livePlatforms.size > 0 ? [] : baseReport.competitors;
 
   const liveTrends = [
     ...liveReports.flatMap(report => report.trends || []),
@@ -79,9 +88,9 @@ async function createIntelReport(input) {
     },
     sourceMode: usedLiveData ? "mixed" : "demo",
     sourceStatus: getSourceStatus(),
-    summary: summarizeReport({ ...baseReport, ads: demoAds }, liveAds, liveTrends, liveCompetitors),
-    competitors: mergeByKey([...liveCompetitors, ...baseReport.competitors], "domain").slice(0, 10),
-    trends: rankItems([...liveTrends, ...baseReport.trends], "score").slice(0, 12),
+    summary: summarizeReport({ ...baseReport, ads: demoAds, trends: demoTrends }, liveAds, liveTrends, liveCompetitors),
+    competitors: mergeByKey([...liveCompetitors, ...demoCompetitors], "domain").slice(0, 10),
+    trends: rankItems([...liveTrends, ...demoTrends], "score").slice(0, 12),
     ads: rankAds([...liveAds, ...demoAds]).slice(0, 30),
     warnings: [
       ...connectorWarnings,
@@ -101,7 +110,8 @@ function getSourceStatus() {
     meta: getConnectorStatus("meta"),
     google: getConnectorStatus("google"),
     bing: getConnectorStatus("bing"),
-    youtube: getYoutubeStatus()
+    youtube: getYoutubeStatus(),
+    tiktok: getTikTokStatus()
   };
 }
 
@@ -165,8 +175,8 @@ function rankAds(items) {
   return items
     .filter(Boolean)
     .sort((left, right) => {
-      const leftRank = AD_PLATFORM_ORDER[left.platform] ?? 3;
-      const rightRank = AD_PLATFORM_ORDER[right.platform] ?? 3;
+      const leftRank = AD_PLATFORM_ORDER[left.platform] ?? 4;
+      const rightRank = AD_PLATFORM_ORDER[right.platform] ?? 4;
       if (leftRank !== rightRank) return leftRank - rightRank;
       return Number(right.heat || 0) - Number(left.heat || 0);
     });
@@ -188,8 +198,8 @@ function inferCompetitorsFromAds(ads, targetHostname, targetBrand) {
   const grouped = new Map();
 
   for (const ad of ads) {
-    // YouTube 视频的落地页统一是 youtube.com，跳过以免污染竞品域名聚合
-    if (ad.platform === "youtube") continue;
+    // YouTube / TikTok 视频的落地页统一是平台域名，跳过以免污染竞品域名聚合
+    if (ad.platform === "youtube" || ad.platform === "tiktok") continue;
     const domain = getHostname(ad.landingUrl);
     if (!domain || domain === targetDomain) continue;
 

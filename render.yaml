@@ -48,6 +48,20 @@ services:
         sync: false
       - key: YOUTUBE_SEARCH_LIMIT
         value: "15"
+      # TikTok 视频情报数据源（TikHub REST）。官方无可用的公开数据 API，
+      # Display API 只能读授权用户自己的视频，Research API 限定非营利学术机构。
+      # 值在 Render Dashboard 手动填入，不落仓库。
+      - key: TIKTOK_API_KEY
+        sync: false
+      - key: TIKTOK_PROVIDER
+        value: tikhub
+      # Render 在新加坡，走国际域名；本地在中国大陆用 .env 改成 https://api.tikhub.dev
+      - key: TIKTOK_API_BASE_URL
+        value: https://api.tikhub.io
+      - key: TIKTOK_SEARCH_LIMIT
+        value: "20"
+      - key: TIKTOK_SORT_TYPE
+        value: "0"
       # 账号体系：Supabase Postgres + scrypt/HMAC 自实现会话。
       # 三个变量都配齐后才会启用登录与每日配额，否则自动降级为免登录。
       - key: SUPABASE_URL

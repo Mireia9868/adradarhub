@@ -42,3 +42,9 @@ services:
         sync: false
       - key: DEEPSEEK_API_BASE_URL
         value: https://api.deepseek.com
+      # YouTube Data API v3 密钥（Google Cloud Console 创建，仅限 youtube.googleapis.com）。
+      # 值在 Render Dashboard 手动填入，不落仓库。
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YOUTUBE_SEARCH_LIMIT
+        value: "15"

@@ -8,6 +8,7 @@ const { createIterationPlan } = require("./src/iteration");
 const { generateImage } = require("./src/imageGen");
 const { chatCompletion } = require("./src/deepseek");
 const { handleGoogleConnector } = require("./src/connectors/googleConnector");
+const { fetchVideoForBrief, buildBriefFallback } = require("./src/connectors/youtubeConnector");
 
 loadEnv();
 
@@ -97,6 +98,40 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.statusCode || 500, {
           error: err.message
         });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/youtube/brief") {
+      const body = await readJson(req);
+      try {
+        const video = await fetchVideoForBrief(body.videoId);
+        let brief;
+        let engine = "template";
+        if (process.env.DEEPSEEK_API_KEY) {
+          const text = await chatCompletion({
+            system:
+              "你是资深海外广告投放操盘手，擅长把竞品视频情报转成可执行的广告素材 Brief。" +
+              "输出简体中文，结构清晰，可直接交给素材与投放同学执行。只使用输入中给出的事实，不要编造数据。",
+            prompt:
+              `竞品视频情报如下（JSON）：\n${JSON.stringify(video, null, 2)}\n\n` +
+              `我方品牌：${body.brand || "未指定"}。请输出一份投放素材 Brief，包含：\n` +
+              "1. 视频情报速览（两句话：这条视频为什么值得跟）；\n" +
+              "2. Hook 拆解（前 3 秒可能的抓人方式）；\n" +
+              "3. 结构复刻脚本（0-5s / 5-20s / 20-45s / 结尾 CTA）；\n" +
+              "4. 卖点映射：结构套用到我方品牌；\n" +
+              "5. 投放标题 ×3；\n6. 缩略图方向 ×2；\n" +
+              "7. 投放建议（剪辑规格与适配平台）。",
+            temperature: 0.6,
+            maxTokens: 1400
+          });
+          brief = text;
+          engine = "deepseek";
+        } else {
+          brief = buildBriefFallback(video, body.brand);
+        }
+        return sendJson(res, 200, { video, brief, engine });
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, { error: err.message });
       }
     }
 

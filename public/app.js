@@ -6,7 +6,7 @@ const state = {
 
 // 广告展示优先级：Bing（可抓取真实数据）在前，Meta / Google 在后。
 // 后端 /api/intel 已按此顺序返回，这里兜一层，避免直接消费旧数据时顺序被打乱。
-const PLATFORM_ORDER = { bing: 0, meta: 1, google: 2 };
+const PLATFORM_ORDER = { bing: 0, youtube: 1, meta: 2, google: 3 };
 
 const form = document.querySelector("#intelForm");
 const statusBanner = document.querySelector("#statusBanner");
@@ -351,6 +351,16 @@ function renderAds() {
     node.querySelector(".source-link").href = ad.sourceUrl || "#";
     node.querySelector(".landing-link").href = ad.landingUrl || "#";
 
+    // YouTube 卡片：追加「生成 Brief」动作
+    if (ad.platform === "youtube" && ad.videoId) {
+      const briefButton = document.createElement("button");
+      briefButton.type = "button";
+      briefButton.className = "source-link brief-button";
+      briefButton.textContent = "生成 Brief";
+      briefButton.addEventListener("click", () => runBrief(ad, briefButton));
+      node.querySelector(".ad-actions").append(briefButton);
+    }
+
     const tagRow = node.querySelector(".tag-row");
     ad.tags.slice(0, 3).forEach(tag => {
       const span = document.createElement("span");
@@ -361,6 +371,41 @@ function renderAds() {
 
     adsGrid.append(node);
   });
+}
+
+// YouTube 视频一键生成投放 Brief（DeepSeek 生成，未配置 Key 时后端回退规则版模板）
+async function runBrief(ad, button) {
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = "Brief 生成中…";
+  try {
+    const response = await fetch("/api/youtube/brief", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        videoId: ad.videoId,
+        brand: state.report?.query?.brand || ""
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "brief_failed");
+
+    let output = button.closest(".ad-body").querySelector(".brief-output");
+    if (!output) {
+      output = document.createElement("pre");
+      output.className = "brief-output";
+      button.closest(".ad-body").append(output);
+    }
+    output.textContent = data.brief;
+    button.textContent = data.engine === "deepseek" ? "已生成（AI）" : "已生成（模板）";
+  } catch (error) {
+    button.textContent = "生成失败，点击重试";
+  } finally {
+    button.disabled = false;
+    if (button.textContent.startsWith("生成失败")) {
+      setTimeout(() => { button.textContent = original; }, 2500);
+    }
+  }
 }
 
 function renderCompetitors() {

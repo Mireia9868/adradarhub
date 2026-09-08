@@ -1,12 +1,14 @@
 const { fetchPlatformIntel, getConnectorStatus } = require("./connectors/transparency");
+const { fetchYouTubeIntel, getYoutubeStatus } = require("./connectors/youtubeConnector");
 const { createDemoIntel } = require("./mockIntel");
 
 const DEFAULT_MARKETS = ["US", "GB", "CA", "AU"];
-const DEFAULT_PLATFORMS = ["meta", "google", "bing"];
+const DEFAULT_PLATFORMS = ["meta", "google", "bing", "youtube"];
 
 // 展示优先级：Bing 可直连 Microsoft Ad Library 取真实数据，排最前；
-// Meta / Google 需要 token 或外部 connector，取不到时是演示数据，排后面。
-const AD_PLATFORM_ORDER = { bing: 0, meta: 1, google: 2 };
+// YouTube 官方 API Key 即可用，排第二；Meta / Google 需要 token 或外部 connector，
+// 取不到时是演示数据，排后面。
+const AD_PLATFORM_ORDER = { bing: 0, youtube: 1, meta: 2, google: 3 };
 
 async function createIntelReport(input) {
   const website = normalizeWebsite(input.website || input.domain || "");
@@ -26,7 +28,10 @@ async function createIntelReport(input) {
   const baseReport = createDemoIntel({ brand, website, markets, platforms, sinceDays });
   const liveReports = await Promise.all(
     platforms.map(platform =>
-      fetchPlatformIntel(platform, { brand, website, markets, sinceDays }).catch(error => ({
+      (platform === "youtube"
+        ? fetchYouTubeIntel({ brand, website, markets, sinceDays })
+        : fetchPlatformIntel(platform, { brand, website, markets, sinceDays })
+      ).catch(error => ({
         platform,
         sourceMode: "demo",
         warnings: [error.message],
@@ -84,7 +89,8 @@ function getSourceStatus() {
   return {
     meta: getConnectorStatus("meta"),
     google: getConnectorStatus("google"),
-    bing: getConnectorStatus("bing")
+    bing: getConnectorStatus("bing"),
+    youtube: getYoutubeStatus()
   };
 }
 
@@ -171,6 +177,8 @@ function inferCompetitorsFromAds(ads, targetHostname, targetBrand) {
   const grouped = new Map();
 
   for (const ad of ads) {
+    // YouTube 视频的落地页统一是 youtube.com，跳过以免污染竞品域名聚合
+    if (ad.platform === "youtube") continue;
     const domain = getHostname(ad.landingUrl);
     if (!domain || domain === targetDomain) continue;
 

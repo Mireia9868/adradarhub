@@ -40,27 +40,30 @@ async function fetchYouTubeIntel(query) {
     };
   }
 
-  const [videos, channels] = await Promise.all([
-    fetchJson(
-      `${API_BASE}/videos?${new URLSearchParams({
-        key: apiKey,
-        part: "snippet,statistics,contentDetails",
-        id: videoIds.join(",")
-      })}`
-    ),
-    fetchJson(
-      `${API_BASE}/channels?${new URLSearchParams({
-        key: apiKey,
-        part: "snippet,statistics",
-        id: [...new Set((videos.items || []).map(item => item.snippet?.channelId).filter(Boolean))].join(",")
-      })}`
-    ).catch(() => ({ items: [] }))
-  ]);
+  const videoPayload = await fetchJson(
+    `${API_BASE}/videos?${new URLSearchParams({
+      key: apiKey,
+      part: "snippet,statistics,contentDetails",
+      id: videoIds.join(",")
+    })}`
+  );
+  const channelIds = [
+    ...new Set((videoPayload.items || []).map(item => item.snippet?.channelId).filter(Boolean))
+  ];
+  const channelPayload = channelIds.length
+    ? await fetchJson(
+        `${API_BASE}/channels?${new URLSearchParams({
+          key: apiKey,
+          part: "snippet,statistics",
+          id: channelIds.join(",")
+        })}`
+      ).catch(() => ({ items: [] }))
+    : { items: [] };
 
   const channelById = new Map(
-    (channels.items || []).map(channel => [channel.id, channel])
+    (channelPayload.items || []).map(channel => [channel.id, channel])
   );
-  const scored = scoreVideoRows(videos.items || []);
+  const scored = scoreVideoRows(videoPayload.items || []);
   const warnings = [];
   if (search.pageInfo?.totalResults > videoIds.length) {
     warnings.push(`YouTube 命中 ${search.pageInfo.totalResults} 条，仅取观看量最高的前 ${videoIds.length} 条（配额控制）。`);

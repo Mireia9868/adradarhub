@@ -43,6 +43,17 @@ async function createIntelReport(input) {
   );
 
   const liveAds = liveReports.flatMap(report => report.ads || []);
+
+  // 已成功取到 live 数据的平台，不再混入该平台的演示卡，避免真实结果被假数据淹没。
+  // 全部平台都未配置时才保留演示数据兜底，保证页面依然可演示。
+  const livePlatforms = new Set(
+    liveReports.filter(report => report.sourceMode === "live").map(report => report.platform)
+  );
+  const demoAds =
+    livePlatforms.size > 0
+      ? baseReport.ads.filter(ad => !livePlatforms.has(ad.platform))
+      : baseReport.ads;
+
   const liveTrends = [
     ...liveReports.flatMap(report => report.trends || []),
     ...inferTrendsFromAds(liveAds, sinceDays)
@@ -68,10 +79,10 @@ async function createIntelReport(input) {
     },
     sourceMode: usedLiveData ? "mixed" : "demo",
     sourceStatus: getSourceStatus(),
-    summary: summarizeReport(baseReport, liveAds, liveTrends, liveCompetitors),
+    summary: summarizeReport({ ...baseReport, ads: demoAds }, liveAds, liveTrends, liveCompetitors),
     competitors: mergeByKey([...liveCompetitors, ...baseReport.competitors], "domain").slice(0, 10),
     trends: rankItems([...liveTrends, ...baseReport.trends], "score").slice(0, 12),
-    ads: rankAds([...liveAds, ...baseReport.ads]).slice(0, 30),
+    ads: rankAds([...liveAds, ...demoAds]).slice(0, 30),
     warnings: [
       ...connectorWarnings,
       {

@@ -13,19 +13,24 @@ async function fetchYouTubeIntel(query) {
   const sinceDays = Number(query.sinceDays || 30);
   const limit = clampInt(Number(process.env.YOUTUBE_SEARCH_LIMIT || 15), 1, 25);
 
+  // 默认用引号做精确短语搜索：不加引号时 YouTube 会模糊匹配（搜 readdy 会返回宝莱坞歌曲），
+  // 加引号后稳定命中品牌自身与 KOL 评测内容。可用 YOUTUBE_EXACT_PHRASE=false 关闭。
+  const exactPhrase = String(process.env.YOUTUBE_EXACT_PHRASE || "true").toLowerCase() !== "false";
   const searchParams = new URLSearchParams({
     key: apiKey,
     part: "id",
-    q: term,
+    q: exactPhrase ? `"${term}"` : term,
     type: "video",
-    order: "viewCount",
+    // 用相关性而不是播放量取候选：order=viewCount 会把品牌词当常见词变体匹配
+    // （搜 readdy 返回嘻哈/板球/政治视频），候选池被噪音占满后再怎么排序都没用。
+    // 相关性由搜索保证，热度由本地 Heat 分负责。
+    order: process.env.YOUTUBE_SEARCH_ORDER || "relevance",
     maxResults: String(limit),
-    publishedAfter: new Date(Date.now() - sinceDays * 86400000).toISOString()
+    publishedAfter: new Date(Date.now() - sinceDays * 86400000).toISOString(),
+    // 默认限制在英语/美国市场，进一步压掉非目标语种的噪音；可用环境变量覆盖。
+    regionCode: process.env.YOUTUBE_REGION_CODE || "US",
+    relevanceLanguage: process.env.YOUTUBE_RELEVANCE_LANGUAGE || "en"
   });
-  if (process.env.YOUTUBE_REGION_CODE) searchParams.set("regionCode", process.env.YOUTUBE_REGION_CODE);
-  if (process.env.YOUTUBE_RELEVANCE_LANGUAGE) {
-    searchParams.set("relevanceLanguage", process.env.YOUTUBE_RELEVANCE_LANGUAGE);
-  }
 
   const search = await fetchJson(`${API_BASE}/search?${searchParams}`);
   const videoIds = (search.items || []).map(item => item.id?.videoId).filter(Boolean);
@@ -47,8 +52,13 @@ async function fetchYouTubeIntel(query) {
       id: videoIds.join(",")
     })}`
   );
+  // 品牌相关性校验：搜索仍可能返回只是"形似"品牌词的内容（如 readdy 匹配到人名 Reddy、
+  // 嘻哈歌词里的 readdy）。只保留标题/频道名/描述里真正出现品牌词的视频。
+  const relevantItems = filterByBrand(videoPayload.items || [], term);
+  const droppedByRelevance = (videoPayload.items || []).length - relevantItems.length;
+
   const channelIds = [
-    ...new Set((videoPayload.items || []).map(item => item.snippet?.channelId).filter(Boolean))
+    ...new Set(relevantItems.map(item => item.snippet?.channelId).filter(Boolean))
   ];
   const channelPayload = channelIds.length
     ? await fetchJson(
@@ -63,10 +73,17 @@ async function fetchYouTubeIntel(query) {
   const channelById = new Map(
     (channelPayload.items || []).map(channel => [channel.id, channel])
   );
-  const scored = scoreVideoRows(videoPayload.items || []);
+  const scored = scoreVideoRows(relevantItems);
   const warnings = [];
   if (search.pageInfo?.totalResults > videoIds.length) {
-    warnings.push(`YouTube 命中 ${search.pageInfo.totalResults} 条，仅取观看量最高的前 ${videoIds.length} 条（配额控制）。`);
+    warnings.push(
+      `YouTube 命中 ${search.pageInfo.totalResults} 条，按相关性取前 ${videoIds.length} 条（配额控制）。`
+    );
+  }
+  if (droppedByRelevance > 0) {
+    warnings.push(
+      `已过滤 ${droppedByRelevance} 条标题/频道/描述中未出现「${term}」的视频（品牌相关性校验）。`
+    );
   }
 
   return {
@@ -77,6 +94,23 @@ async function fetchYouTubeIntel(query) {
     trends: [],
     competitors: buildChannelCompetitors(scored, channelById, query)
   };
+}
+
+// 只保留标题 / 频道名 / 描述中真正出现品牌词的视频
+function filterByBrand(items, term) {
+  const needle = String(term || "").trim().toLowerCase();
+  if (!needle) return items;
+  return items.filter(item => {
+    const haystack = [
+      item.snippet?.title,
+      item.snippet?.channelTitle,
+      (item.snippet?.description || "").slice(0, 800)
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
 }
 
 // 纯函数，便于离线回测调权重：输入 videos.list 原始 items，输出带分数的行

@@ -75,6 +75,16 @@
             <p data-page-node-id="LUS4aiLBSuuUZnD1jQ3b16">输入品牌网站，聚合广告透明度来源；导入平台效果数据后，客户层级素材要求会自动继承到每一轮迭代 Brief。</p>
           </div>
 
+          <div class="auth-bar" id="authBar" hidden>
+            <div class="auth-user" id="authUser" hidden>
+              <span class="auth-avatar" id="authAvatar" aria-hidden="true">M</span>
+              <span class="auth-email" id="authEmailLabel"></span>
+              <span class="auth-quota" id="authQuota">剩余 10 次</span>
+              <button class="auth-link" id="authLogout" type="button">退出</button>
+            </div>
+            <button class="auth-login-btn" id="authOpen" type="button">登录 / 注册</button>
+          </div>
+
           <form id="intelForm" class="query-form" data-page-node-id="DMR1qRNBL5UaSXPvqVSEL2">
             <label class="field wide-field" data-page-node-id="GNascImxaZIQewYj6SPpaB">
               <span data-page-node-id="aCnr6Z0lf8Y8FdchlQRKgi">目标网站</span>
@@ -396,6 +406,33 @@ Google 标题覆盖高意图关键词
         </div>
       </article>
     </template>
+
+    <div class="auth-overlay" id="authOverlay" hidden>
+      <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <button class="auth-close" id="authClose" type="button" aria-label="关闭">✕</button>
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tabLogin" data-mode="login" type="button">登录</button>
+          <button class="auth-tab" id="tabSignup" data-mode="signup" type="button">注册</button>
+        </div>
+        <h2 id="authTitle">登录后开始使用</h2>
+        <p class="auth-sub" id="authSub">登录后可每天拉取 10 次数据，额度每日 0 点重置。</p>
+        <form id="authForm">
+          <label class="field">
+            <span>邮箱</span>
+            <input id="authEmail" type="email" autocomplete="email" placeholder="you@company.com" required />
+          </label>
+          <label class="field">
+            <span>密码</span>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="至少 8 位" required />
+          </label>
+          <p class="auth-error" id="authError" hidden></p>
+          <button class="run-button auth-submit" id="authSubmit" type="submit">
+            <span aria-hidden="true">→</span>
+            <span id="authSubmitLabel">登录</span>
+          </button>
+        </form>
+      </div>
+    </div>
 
     <script src="/motion.js"></script>
     <script src="/app.js"></script>

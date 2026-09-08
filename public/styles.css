@@ -1862,3 +1862,223 @@ button {
   background: none;
   font: inherit;
 }
+
+/* ===== 账号入口 / 登录弹窗 ===== */
+.auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: -4px;
+  min-height: 42px;
+}
+
+.auth-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(112, 87, 255, 0.22);
+  box-shadow: 0 6px 18px rgba(11, 12, 59, 0.06);
+}
+
+.auth-avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7057ff, #a78bfa);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-email {
+  font-size: 12.5px;
+  color: rgba(11, 12, 59, 0.72);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-quota {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7057ff;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(112, 87, 255, 0.1);
+}
+
+.auth-quota.is-empty {
+  color: #b42318;
+  background: rgba(180, 35, 24, 0.1);
+}
+
+.auth-link {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: rgba(11, 12, 59, 0.5);
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-link:hover {
+  color: #7057ff;
+}
+
+.auth-login-btn {
+  border: 1px solid rgba(112, 87, 255, 0.35);
+  background: linear-gradient(135deg, #7057ff, #8b6dff);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(112, 87, 255, 0.28);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.auth-login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(112, 87, 255, 0.34);
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 12, 59, 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.auth-modal {
+  position: relative;
+  width: min(400px, 100%);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 28px 26px 26px;
+  box-shadow: 0 24px 60px rgba(11, 12, 59, 0.28);
+}
+
+.auth-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(11, 12, 59, 0.06);
+  color: rgba(11, 12, 59, 0.6);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.auth-close:hover {
+  background: rgba(11, 12, 59, 0.12);
+}
+
+.auth-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(112, 87, 255, 0.1);
+  margin-bottom: 16px;
+}
+
+.auth-tab {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(11, 12, 59, 0.55);
+  padding: 7px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: #ffffff;
+  color: #7057ff;
+  box-shadow: 0 2px 8px rgba(11, 12, 59, 0.1);
+}
+
+.auth-modal h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #0b0c3b;
+}
+
+.auth-sub {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(11, 12, 59, 0.6);
+}
+
+.auth-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-modal .field input {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(11, 12, 59, 0.14);
+  font: inherit;
+  font-size: 14px;
+  color: #0b0c3b;
+  background: #f9fafb;
+}
+
+.auth-modal .field input:focus {
+  outline: none;
+  border-color: #7057ff;
+  box-shadow: 0 0 0 3px rgba(112, 87, 255, 0.14);
+  background: #ffffff;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(180, 35, 24, 0.08);
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  color: #b42318;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.auth-submit {
+  justify-content: center;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (max-width: 720px) {
+  .auth-email {
+    display: none;
+  }
+}

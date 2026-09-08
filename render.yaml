@@ -48,3 +48,15 @@ services:
         sync: false
       - key: YOUTUBE_SEARCH_LIMIT
         value: "15"
+      # 账号体系：Supabase Postgres + scrypt/HMAC 自实现会话。
+      # 三个变量都配齐后才会启用登录与每日配额，否则自动降级为免登录。
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: DAILY_QUOTA
+        value: "10"
+      - key: QUOTA_UTC_OFFSET
+        value: "8"

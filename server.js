@@ -9,6 +9,14 @@ const { generateImage } = require("./src/imageGen");
 const { chatCompletion } = require("./src/deepseek");
 const { handleGoogleConnector } = require("./src/connectors/googleConnector");
 const { fetchVideoForBrief, buildBriefFallback } = require("./src/connectors/youtubeConnector");
+const {
+  authConfig,
+  signUp,
+  signIn,
+  resolveSession,
+  requireQuota,
+  quotaHeaders
+} = require("./src/auth");
 
 loadEnv();
 
@@ -43,6 +51,46 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/config") {
+      const cfg = authConfig();
+      return sendJson(res, 200, {
+        enabled: cfg.enabled,
+        quotaPerDay: cfg.quotaPerDay,
+        missing: cfg.missing
+      });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/signup") {
+      const body = await readJson(req);
+      try {
+        return sendJson(res, 200, await signUp(body));
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/login") {
+      const body = await readJson(req);
+      try {
+        return sendJson(res, 200, await signIn(body));
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/auth/me") {
+      try {
+        const session = await resolveSession(req);
+        if (!session) {
+          // 账号系统未启用：返回未登录态，前端不做拦截
+          return sendJson(res, 200, { user: null, usage: null });
+        }
+        return sendJson(res, 200, session);
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, { error: err.message });
+      }
+    }
+
     if (req.method === "GET" && url.pathname === "/api/api-check") {
       const checks = await checkApiConnections({
         website: url.searchParams.get("website") || "readdy.ai",
@@ -55,8 +103,9 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/intel") {
       const body = await readJson(req);
+      const session = await requireQuota(req, "intel");
       const report = await createIntelReport(body);
-      return sendJson(res, 200, report);
+      return sendJson(res, 200, report, quotaHeaders(session && session.usage));
     }
 
     if (req.method === "POST" && url.pathname === "/api/iteration") {
@@ -67,6 +116,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/generate-image") {
       const body = await readJson(req);
+      const session = await requireQuota(req, "generate-image");
       try {
         const images = await generateImage({
           prompt: body.prompt,
@@ -75,7 +125,7 @@ const server = http.createServer(async (req, res) => {
           model: body.model,
           steps: body.steps
         });
-        return sendJson(res, 200, { images });
+        return sendJson(res, 200, { images }, quotaHeaders(session && session.usage));
       } catch (err) {
         return sendJson(res, err.statusCode || 500, {
           error: err.message
@@ -85,6 +135,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/llm") {
       const body = await readJson(req);
+      const session = await requireQuota(req, "llm");
       try {
         const text = await chatCompletion({
           system: body.system,
@@ -93,7 +144,7 @@ const server = http.createServer(async (req, res) => {
           temperature: body.temperature,
           maxTokens: body.maxTokens
         });
-        return sendJson(res, 200, { text });
+        return sendJson(res, 200, { text }, quotaHeaders(session && session.usage));
       } catch (err) {
         return sendJson(res, err.statusCode || 500, {
           error: err.message
@@ -103,6 +154,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/youtube/brief") {
       const body = await readJson(req);
+      const session = await requireQuota(req, "youtube-brief");
       try {
         const video = await fetchVideoForBrief(body.videoId);
         let brief;
@@ -129,7 +181,7 @@ const server = http.createServer(async (req, res) => {
         } else {
           brief = buildBriefFallback(video, body.brand);
         }
-        return sendJson(res, 200, { video, brief, engine });
+        return sendJson(res, 200, { video, brief, engine }, quotaHeaders(session && session.usage));
       } catch (err) {
         return sendJson(res, err.statusCode || 500, { error: err.message });
       }
@@ -185,8 +237,8 @@ function resolveStaticPath(pathname) {
   return filePath;
 }
 
-function sendJson(res, status, payload) {
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
+function sendJson(res, status, payload, headers = {}) {
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8", ...headers });
   res.end(JSON.stringify(payload));
 }
 

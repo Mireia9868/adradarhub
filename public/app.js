@@ -103,8 +103,212 @@ if (initialSection) {
   if (navButton) navButton.click();
 }
 
+// ===== 账号、会话与每日配额 =====
+const auth = { enabled: false, token: "", user: null, usage: null };
+const TOKEN_KEY = "atr_token";
+
+const authBar = document.querySelector("#authBar");
+const authUser = document.querySelector("#authUser");
+const authOpen = document.querySelector("#authOpen");
+const authLogout = document.querySelector("#authLogout");
+const authEmailLabel = document.querySelector("#authEmailLabel");
+const authQuota = document.querySelector("#authQuota");
+const authAvatar = document.querySelector("#authAvatar");
+const authOverlay = document.querySelector("#authOverlay");
+const authClose = document.querySelector("#authClose");
+const authForm = document.querySelector("#authForm");
+const authEmail = document.querySelector("#authEmail");
+const authPassword = document.querySelector("#authPassword");
+const authError = document.querySelector("#authError");
+const authSubmit = document.querySelector("#authSubmit");
+const authSubmitLabel = document.querySelector("#authSubmitLabel");
+const authTitle = document.querySelector("#authTitle");
+const authSub = document.querySelector("#authSub");
+const tabLogin = document.querySelector("#tabLogin");
+const tabSignup = document.querySelector("#tabSignup");
+
+let authMode = "login";
+
+function renderAuth() {
+  if (!auth.enabled) {
+    authBar.hidden = true;
+    return;
+  }
+  authBar.hidden = false;
+  if (auth.user) {
+    authUser.hidden = false;
+    authOpen.hidden = true;
+    authEmailLabel.textContent = auth.user.email;
+    authAvatar.textContent = (auth.user.email || "U").charAt(0).toUpperCase();
+    applyUsage(auth.usage);
+  } else {
+    authUser.hidden = true;
+    authOpen.hidden = false;
+  }
+}
+
+function applyUsage(usage) {
+  if (!usage) return;
+  auth.usage = { ...auth.usage, ...usage };
+  authQuota.textContent = auth.usage.remaining > 0 ? `剩余 ${auth.usage.remaining} 次` : "今日额度已用完";
+  authQuota.classList.toggle("is-empty", auth.usage.remaining <= 0);
+}
+
+function openAuthModal() {
+  authOverlay.hidden = false;
+  setTimeout(() => authEmail.focus(), 30);
+}
+
+function closeAuthModal() {
+  authOverlay.hidden = true;
+  authError.hidden = true;
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  tabLogin.classList.toggle("active", mode === "login");
+  tabSignup.classList.toggle("active", mode === "signup");
+  authTitle.textContent = mode === "login" ? "登录后开始使用" : "创建账号";
+  authSub.textContent =
+    mode === "login"
+      ? "登录后可每天拉取数据（额度每日重置）。"
+      : "免费注册即享每日额度，密码至少 8 位。";
+  authSubmitLabel.textContent = mode === "login" ? "登录" : "注册";
+  authError.hidden = true;
+}
+
+// 统一带 Authorization 的请求，并集中处理未登录 / 额度耗尽
+async function requestWithAuth(pathname, options = {}) {
+  const headers = { "content-type": "application/json", ...(options.headers || {}) };
+  if (auth.token) headers.authorization = `Bearer ${auth.token}`;
+  const response = await fetch(pathname, { ...options, headers });
+
+  const remaining = response.headers.get("x-quota-remaining");
+  if (remaining !== null) {
+    applyUsage({
+      remaining: Number(remaining),
+      used: Number(response.headers.get("x-quota-used") || 0),
+      limit: Number(response.headers.get("x-quota-limit") || 10)
+    });
+  }
+
+  if (response.status === 401 && auth.enabled) {
+    auth.token = "";
+    auth.user = null;
+    localStorage.removeItem(TOKEN_KEY);
+    renderAuth();
+    openAuthModal();
+    throw new Error("请先登录后再操作。");
+  }
+  if (response.status === 429) {
+    const data = await response.json().catch(() => ({}));
+    applyUsage({ remaining: 0 });
+    throw new Error(data.error || data.message || "今日额度已用完。");
+  }
+  return response;
+}
+
+async function fetchMe() {
+  try {
+    const response = await fetch("/api/auth/me", {
+      headers: auth.token ? { authorization: `Bearer ${auth.token}` } : {}
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    if (!data.user) return false;
+    auth.user = data.user;
+    auth.usage = data.usage;
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function initAuth() {
+  try {
+    const response = await fetch("/api/auth/config");
+    const cfg = await response.json();
+    auth.enabled = Boolean(cfg.enabled);
+  } catch (error) {
+    auth.enabled = false;
+  }
+  renderAuth();
+  if (!auth.enabled) return true;
+
+  auth.token = localStorage.getItem(TOKEN_KEY) || "";
+  if (auth.token && (await fetchMe())) {
+    renderAuth();
+    return true;
+  }
+  auth.token = "";
+  auth.user = null;
+  localStorage.removeItem(TOKEN_KEY);
+  renderAuth();
+  openAuthModal();
+  return false;
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  authError.hidden = true;
+  authSubmit.disabled = true;
+  authSubmitLabel.textContent = authMode === "login" ? "登录中…" : "注册中…";
+  try {
+    const response = await fetch(authMode === "login" ? "/api/auth/login" : "/api/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: authEmail.value.trim(), password: authPassword.value })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || data.message || "操作失败，请重试。");
+    localStorage.setItem(TOKEN_KEY, data.token);
+    auth.token = data.token;
+    auth.user = data.user;
+    auth.usage = data.usage;
+    renderAuth();
+    closeAuthModal();
+    runIntel();
+  } catch (error) {
+    authError.textContent = error.message;
+    authError.hidden = false;
+  } finally {
+    authSubmit.disabled = false;
+    authSubmitLabel.textContent = authMode === "login" ? "登录" : "注册";
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem(TOKEN_KEY);
+  auth.token = "";
+  auth.user = null;
+  auth.usage = null;
+  renderAuth();
+  openAuthModal();
+}
+
+if (authOpen) authOpen.addEventListener("click", () => openAuthModal());
+if (authLogout) authLogout.addEventListener("click", handleLogout);
+if (authClose) authClose.addEventListener("click", closeAuthModal);
+if (authOverlay) {
+  authOverlay.addEventListener("click", event => {
+    if (event.target === authOverlay) closeAuthModal();
+  });
+}
+if (tabLogin) tabLogin.addEventListener("click", () => setAuthMode("login"));
+if (tabSignup) tabSignup.addEventListener("click", () => setAuthMode("signup"));
+if (authForm) authForm.addEventListener("submit", submitAuth);
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeAuthModal();
+});
+
 loadSourceStatus();
-runIntel();
+initAuth().then(signedIn => {
+  if (signedIn) {
+    runIntel();
+  } else {
+    setStatus("Login required", "请先登录或注册账号，登录后每天可拉取 10 次数据。");
+  }
+});
 
 async function runIntel() {
   const website = document.querySelector("#websiteInput").value.trim();
@@ -116,9 +320,8 @@ async function runIntel() {
   setStatus("Scanning", "正在拉取广告透明度中心数据，并生成竞品趋势信号。");
 
   try {
-    const response = await fetch("/api/intel", {
+    const response = await requestWithAuth("/api/intel", {
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({ website, markets, sinceDays, platforms })
     });
 
@@ -223,9 +426,8 @@ async function runDeepSeek() {
       "4. **风格与避坑**：1-2 句该平台素材应注意的视觉与合规要点。"
     ].join("\n");
 
-    const response = await fetch("/api/llm", {
+    const response = await requestWithAuth("/api/llm", {
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({ system, prompt, model: "deepseek-v4-flash", temperature: 0.8 })
     });
     const data = await response.json();
@@ -276,9 +478,8 @@ async function runGenerate() {
   genResults.innerHTML = '<div class="empty-state">生成中，请稍候…</div>';
 
   try {
-    const response = await fetch("/api/generate-image", {
+    const response = await requestWithAuth("/api/generate-image", {
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         prompt,
         negativePrompt: genNegative.value.trim(),
@@ -379,9 +580,8 @@ async function runBrief(ad, button) {
   button.disabled = true;
   button.textContent = "Brief 生成中…";
   try {
-    const response = await fetch("/api/youtube/brief", {
+    const response = await requestWithAuth("/api/youtube/brief", {
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         videoId: ad.videoId,
         brand: state.report?.query?.brand || ""

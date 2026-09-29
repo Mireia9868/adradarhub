@@ -173,7 +173,17 @@ const DICT = {
     "mock.trend.rec1": "Split it into standalone search keyword groups and Shopping title terms.",
     "mock.trend.rec2": "Use it in the first 3 seconds of Meta short-video captions.",
     "mock.trend.rec3": "Add it to the trust module on the landing page first screen.",
-    "mock.trend.readdyAi": "AI one-click website"
+    "mock.trend.readdyAi": "AI one-click website",
+
+    "auth.notConfigured": "Account system not configured: missing {keys}. Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and AUTH_SECRET in the Render dashboard, then redeploy.",
+    "auth.emailExists": "This email is already registered — please log in instead.",
+    "auth.signupFailed": "Sign up failed: Supabase returned no user record.",
+    "auth.missingCredentials": "Please enter your email and password.",
+    "auth.invalidCredentials": "Incorrect email or password.",
+    "auth.invalidEmail": "Please enter a valid email address.",
+    "auth.passwordTooShort": "Password must be at least 8 characters.",
+    "auth.quotaExhausted": "Daily quota of {limit} pulls is used up. It resets at {resetAt}.",
+    "auth.loginRequired": "Please log in before pulling data."
   },
 
   zh: {
@@ -318,7 +328,17 @@ const DICT = {
     "mock.trend.rec1": "拆成独立搜索词组和 Shopping 标题词。",
     "mock.trend.rec2": "用于 Meta 短视频前 3 秒字幕。",
     "mock.trend.rec3": "加入落地页首屏信任模块。",
-    "mock.trend.readdyAi": "AI 一键生成官网"
+    "mock.trend.readdyAi": "AI 一键生成官网",
+
+    "auth.notConfigured": "账号系统未配置：缺少 {keys}。请在 Render 后台 Environment 添加后重新部署。",
+    "auth.emailExists": "该邮箱已注册，请直接登录。",
+    "auth.signupFailed": "注册失败：Supabase 未返回用户记录。",
+    "auth.missingCredentials": "请填写邮箱和密码。",
+    "auth.invalidCredentials": "邮箱或密码不正确。",
+    "auth.invalidEmail": "请填写有效的邮箱地址。",
+    "auth.passwordTooShort": "密码至少 8 位。",
+    "auth.quotaExhausted": "今日 {limit} 次额度已用完，额度将在 {resetAt} 重置。",
+    "auth.loginRequired": "请先登录后再拉取数据。"
   }
 };
 

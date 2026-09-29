@@ -276,7 +276,7 @@ async function submitAuth(event) {
     const response = await fetch(authMode === "login" ? "/api/auth/login" : "/api/auth/signup", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: authEmail.value.trim(), password: authPassword.value })
+      body: JSON.stringify({ email: authEmail.value.trim(), password: authPassword.value, lang: ATR_LANG })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || data.message || t("auth.loginFailed"));

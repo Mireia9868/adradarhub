@@ -144,7 +144,7 @@ async function main() {
 
   const exhausted = await auth.consume(uid, "intel").catch(e => e);
   check("第 11 次被拒（429）", exhausted.statusCode === 429, exhausted.message);
-  check("429 提示里带重置时间", /重置/.test(exhausted.message || ""));
+  check("429 提示里带重置时间", /resets at|重置/.test(exhausted.message || ""));
 
   console.log("\n[5] 隔天自动恢复");
   const beforeOffset = process.env.QUOTA_UTC_OFFSET;

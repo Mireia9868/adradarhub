@@ -2,6 +2,7 @@
 // 存储走 Supabase（Postgres + PostgREST），只用 REST，不引第三方 SDK。
 // 密码：Node 内置 scrypt 加盐哈希；会话：crypto HMAC 自签名 token，服务端无状态。
 const crypto = require("node:crypto");
+const { tr } = require("./i18n");
 
 // —— 配置读取（放在函数里读，避免 require 时机早于 loadEnv）——
 function config() {
@@ -131,12 +132,12 @@ function publicUser(row) {
 // —— 对外：注册 / 登录 ——
 async function signUp({ email, password }) {
   const cfg = config();
-  if (!cfg.enabled) throw httpError(503, "账号系统未配置：缺少 " + missingKeys(cfg).join(", "));
+  if (!cfg.enabled) throw httpError(503, tr("auth.notConfigured", { keys: missingKeys(cfg).join(", ") }));
   const normalizedEmail = String(email || "").trim().toLowerCase();
   validateCredentials(normalizedEmail, password);
 
   const existing = await findUserByEmail(cfg, normalizedEmail);
-  if (existing) throw httpError(409, "该邮箱已注册，请直接登录。");
+  if (existing) throw httpError(409, tr("auth.emailExists"));
 
   const response = await rest(cfg, "atr_users", {
     method: "POST",
@@ -145,20 +146,20 @@ async function signUp({ email, password }) {
   });
   const rows = await response.json();
   const user = rows[0];
-  if (!user) throw httpError(502, "注册失败：Supabase 未返回用户记录。");
+  if (!user) throw httpError(502, tr("auth.signupFailed"));
   return issueSession(user, cfg);
 }
 
 async function signIn({ email, password }) {
   const cfg = config();
-  if (!cfg.enabled) throw httpError(503, "账号系统未配置：缺少 " + missingKeys(cfg).join(", "));
+  if (!cfg.enabled) throw httpError(503, tr("auth.notConfigured", { keys: missingKeys(cfg).join(", ") }));
   const normalizedEmail = String(email || "").trim().toLowerCase();
-  if (!normalizedEmail || !password) throw httpError(400, "请填写邮箱和密码。");
+  if (!normalizedEmail || !password) throw httpError(400, tr("auth.missingCredentials"));
 
   const user = await findUserByEmail(cfg, normalizedEmail);
   // 邮箱不存在与密码错误返回同一提示，避免账号枚举
   if (!user || !verifyPassword(password, user.password_hash)) {
-    throw httpError(401, "邮箱或密码不正确。");
+    throw httpError(401, tr("auth.invalidCredentials"));
   }
   return issueSession(user, cfg);
 }
@@ -169,9 +170,9 @@ async function issueSession(user, cfg) {
 }
 
 function validateCredentials(email, password) {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw httpError(400, "请填写有效的邮箱地址。");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw httpError(400, tr("auth.invalidEmail"));
   if (typeof password !== "string" || password.length < 8) {
-    throw httpError(400, "密码至少 8 位。");
+    throw httpError(400, tr("auth.passwordTooShort"));
   }
 }
 
@@ -208,7 +209,7 @@ async function consume(userId, action = "intel") {
   const usage = await readUsage(cfg, userId);
   if (usage.used >= cfg.quotaPerDay) {
     throw Object.assign(
-      httpError(429, `今日 ${usage.limit} 次额度已用完，额度将在 ${usage.resetAt} 重置。`),
+      httpError(429, tr("auth.quotaExhausted", { limit: usage.limit, resetAt: usage.resetAt })),
       { usage }
     );
   }
@@ -224,7 +225,7 @@ async function resolveSession(req) {
   const cfg = config();
   if (!cfg.enabled) return null;
   const payload = readToken(bearerToken(req));
-  if (!payload) throw httpError(401, "请先登录后再拉取数据。");
+  if (!payload) throw httpError(401, tr("auth.loginRequired"));
   const usage = await readUsage(cfg, payload.sub);
   return { user: { id: payload.sub, email: payload.email }, usage };
 }

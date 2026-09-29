@@ -8,6 +8,7 @@ const { createIterationPlan } = require("./src/iteration");
 const { generateImage } = require("./src/imageGen");
 const { chatCompletion } = require("./src/deepseek");
 const { handleGoogleConnector } = require("./src/connectors/googleConnector");
+const { createSiteAnalyticsReport } = require("./src/siteAnalytics");
 const { fetchVideoForBrief, buildBriefFallback } = require("./src/connectors/youtubeConnector");
 const {
   fetchVideoForBrief: fetchTikTokVideo,
@@ -33,6 +34,8 @@ const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -237,6 +240,23 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (req.method === "POST" && url.pathname === "/api/site-analytics") {
+      const body = await readJson(req);
+      const session = await requireQuota(req, "site-analytics");
+      const report = await createSiteAnalyticsReport(body);
+      return sendJson(res, 200, report, quotaHeaders(session && session.usage));
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/site-analytics") {
+      const report = await createSiteAnalyticsReport({
+        website: url.searchParams.get("website") || url.searchParams.get("domain") || "",
+        siteUrl: url.searchParams.get("siteUrl") || "",
+        propertyId: url.searchParams.get("propertyId") || "",
+        sinceDays: Number(url.searchParams.get("sinceDays") || 28)
+      });
+      return sendJson(res, 200, report);
+    }
+
     if (req.method !== "GET") {
       return sendJson(res, 405, { error: "method_not_allowed" });
     }
@@ -254,6 +274,11 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 404, { error: "not_found" });
     }
     const ext = path.extname(filePath);
+    if (ext === ".html") {
+      res.writeHead(200, { "content-type": mimeTypes[ext] });
+      res.end(injectSiteTags(file.toString("utf8")));
+      return;
+    }
     res.writeHead(200, { "content-type": mimeTypes[ext] || "application/octet-stream" });
     res.end(file);
   } catch (error) {
@@ -275,6 +300,33 @@ function resolveStaticPath(pathname) {
   const filePath = path.join(publicDir, safePath);
   if (!filePath.startsWith(publicDir)) return null;
   return filePath;
+}
+
+// GA4 统计代码与 GSC 验证 meta 只在服务端注入：密钥/ID 不进仓库，
+// 没配环境变量时页面原样返回，不影响本地开发。
+function injectSiteTags(html) {
+  const tags = [];
+  const measurementId = String(process.env.GA4_MEASUREMENT_ID || "").trim();
+  const verification = String(process.env.GSC_VERIFICATION_CODE || "").trim().replace(/["<>]/g, "");
+
+  if (measurementId) {
+    tags.push(
+      `<!-- Google Analytics 4 -->\n` +
+        `<script async src="https://www.googletagmanager.com/gtag/js?id=${measurementId}"></script>\n` +
+        `<script>\n` +
+        "  window.dataLayer = window.dataLayer || [];\n" +
+        "  function gtag(){dataLayer.push(arguments);}\n" +
+        "  gtag('js', new Date());\n" +
+        `  gtag('config', '${measurementId}');\n` +
+        `</script>`
+    );
+  }
+  if (verification) {
+    tags.push(`<meta name="google-site-verification" content="${verification}" />`);
+  }
+  if (!tags.length) return html;
+  if (html.includes("<!--SITE_TAGS-->")) return html.replace("<!--SITE_TAGS-->", tags.join("\n"));
+  return html.includes("</head>") ? html.replace("</head>", tags.join("\n") + "\n  </head>") : html;
 }
 
 function sendJson(res, status, payload, headers = {}) {

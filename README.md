@@ -162,8 +162,78 @@ CONNECTOR_CURL_FALLBACK=true
 - `src/intel.js` validates queries and assembles reports.
 - `src/iteration.js` inherits creative requirements and turns platform metrics into iteration briefs.
 - `src/connectors/transparency.js` calls live connector endpoints when configured.
+- `src/siteAnalytics.js`, `src/connectors/gscConnector.js`, `src/connectors/ga4Connector.js` 提供 GSC + GA4 站点数据。
+- `src/googleAuth.js` 用服务账号 JWT 换 access token（无第三方依赖）。
 - `src/mockIntel.js` provides demo data for local use.
 - `public/` contains the dashboard UI.
+
+## 站点数据：GSC + GA4
+
+「站点数据」模块把自然搜索（需求侧）和站内行为（供给侧）合并成一份能派工的报告。
+广告侧看竞品投什么，这个模块看自己站点接不接得住。
+
+### 接入步骤（约 15 分钟）
+
+1. **建服务账号**：Google Cloud Console → IAM 和管理 → 服务账号 → 创建服务账号 → 密钥 → 添加密钥 → 创建新密钥（JSON）。
+2. **开 API**：API 库里启用 `Google Search Console API` 与 `Google Analytics Data API`（analyticsdata.googleapis.com）。
+3. **给权限**（漏这步会一直 403）：
+   - GSC → 设置 → 用户和权限 → 添加用户，填服务账号邮箱，权限「受限用户」。
+   - GA4 → 管理 → 媒体资源访问权限管理 → 添加用户，填同一个邮箱，角色「查看者」。
+4. **填环境变量**（`.env` 本地 / Render 后台线上）：
+
+```bash
+GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@xxx.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# 或整段 JSON：GOOGLE_SERVICE_ACCOUNT_JSON={"client_email":"...","private_key":"..."}
+GSC_SITE_URL=sc-domain:adradarhub.com   # 也可写 https://adradarhub.com/
+GA4_PROPERTY_ID=123456789
+```
+
+私钥里的换行在 `.env` 中写成字面量 `\n` 即可，代码会自动还原成真实换行。
+
+5. **自检**：
+
+```bash
+npm run check:site                      # 用默认域名
+npm run check:site -- adradarhub.com 28 # 指定域名与窗口
+```
+
+浏览器直接看：
+
+```text
+http://127.0.0.1:4173/api/site-analytics?website=adradarhub.com&sinceDays=28
+```
+
+### 拉什么数据
+
+| 来源 | 维度 | 指标 |
+| --- | --- | --- |
+| GSC | query / page / country / device / date | clicks、impressions、CTR、position |
+| GA4 | sessionDefaultChannelGroup / pagePath / country / date | activeUsers、sessions、screenPageViews、engagementRate、conversions |
+
+### 自动产出的洞察
+
+| 洞察 | 触发条件 | 动作 |
+| --- | --- | --- |
+| 高曝光低点击 | CTR 低于同排名行业正常值（内置 CTR 曲线） | 改 title / meta，同一批词进搜索广告 RSA 做 A/B |
+| 临门一脚词 | 排名 4–15 位且曝光 ≥ 100 | 内容补强 + 搜索广告精确匹配抢前 3 |
+| 点击环比下滑 | 后半窗口点击低于前半 15% 以上 | 查索引/robots，或对比 SERP 富摘要变化 |
+| 渠道结构失衡 | 付费会话占比 ≥ 50% | 把付费高转化词反向补成内容页，压品牌词出价 |
+| 低互动落地页 | 浏览量 ≥ 200 且互动率 < 40% | 重做首屏，进「素材迭代」做 A/B |
+| 有流量没转化 | 会话 ≥ 100 且 CVR < 2% | 先核事件打点（key event），再拆渠道定位 |
+
+未配置凭证时全部返回演示数据，页面照样跑通，且在「数据源」页明确显示 Demo。
+
+### 站点自身的 GA4 与 GSC 验证（可选）
+
+```bash
+GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+GSC_VERIFICATION_CODE=从 GSC「HTML 标记」复制的 content 值
+```
+
+配了这两个变量后，`index.html` 的 `<!--SITE_TAGS-->` 位置会自动注入 gtag 代码片段与
+`<meta name="google-site-verification">`，密钥不进仓库。没配则页面原样输出。
+`robots.txt` 与 `sitemap.xml` 已在 `public/` 下，直接在 GSC 提交 sitemap 即可。
 
 ## Official sources
 

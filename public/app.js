@@ -1,6 +1,7 @@
 const state = {
   report: null,
   iteration: null,
+  site: null,
   filter: "all"
 };
 
@@ -36,6 +37,19 @@ const iterationForm = document.querySelector("#iterationForm");
 const iterationButton = document.querySelector("#iterationButton");
 const sampleCsvButton = document.querySelector("#sampleCsvButton");
 const csvFile = document.querySelector("#csvFile");
+const siteForm = document.querySelector("#siteForm");
+const siteButton = document.querySelector("#siteButton");
+const siteMode = document.querySelector("#siteMode");
+const siteNote = document.querySelector("#siteNote");
+const gscSummary = document.querySelector("#gscSummary");
+const gscQueries = document.querySelector("#gscQueries");
+const gscOpportunities = document.querySelector("#gscOpportunities");
+const ga4Summary = document.querySelector("#ga4Summary");
+const ga4Channels = document.querySelector("#ga4Channels");
+const ga4Pages = document.querySelector("#ga4Pages");
+const siteInsights = document.querySelector("#siteInsights");
+const gscRange = document.querySelector("#gscRange");
+const ga4Range = document.querySelector("#ga4Range");
 
 const sampleCsv = [
   "creative_id,platform,campaign,angle,hook,impressions,clicks,spend,conversions,revenue,thumb_stop_rate,hold_rate",
@@ -73,6 +87,11 @@ genForm.addEventListener("submit", event => {
 
 dsButton.addEventListener("click", runDeepSeek);
 
+siteForm.addEventListener("submit", event => {
+  event.preventDefault();
+  runSiteAnalytics();
+});
+
 document.querySelectorAll(".segment").forEach(button => {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter;
@@ -92,6 +111,8 @@ document.querySelectorAll(".nav-item").forEach(button => {
       page.classList.toggle("active", page.dataset.page === section);
     });
     if (history.replaceState) history.replaceState(null, "", "#" + section);
+    // 首次进入「站点数据」自动拉一次，避免空页面。
+    if (section === "site" && !state.site) runSiteAnalytics();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 });
@@ -510,6 +531,188 @@ async function runGenerate() {
   }
 }
 
+async function runSiteAnalytics() {
+  const label = siteButton.querySelector("span:last-child");
+  const original = label.textContent;
+  siteButton.disabled = true;
+  label.textContent = "拉取中…";
+  siteNote.textContent = "正在拉取 GSC 与 GA4 数据…";
+
+  try {
+    const response = await requestWithAuth("/api/site-analytics", {
+      method: "POST",
+      body: JSON.stringify({
+        website: document.querySelector("#siteWebsite").value.trim(),
+        siteUrl: document.querySelector("#siteUrlInput").value.trim(),
+        propertyId: document.querySelector("#ga4PropertyInput").value.trim(),
+        sinceDays: Number(document.querySelector("#siteSinceDays").value)
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || data.message || "site_analytics_failed");
+
+    state.site = data;
+    renderSite();
+  } catch (error) {
+    siteNote.textContent = `拉取失败：${error.message}`;
+    siteInsights.innerHTML = `<div class="empty-state">拉取失败：${escapeHtml(error.message)}</div>`;
+  } finally {
+    siteButton.disabled = false;
+    label.textContent = original;
+  }
+}
+
+function renderSite() {
+  const data = state.site;
+  if (!data) return;
+
+  const gsc = data.gsc || {};
+  const ga4 = data.ga4 || {};
+  const gscTotals = gsc.totals || {};
+  const ga4Totals = ga4.totals || {};
+
+  siteMode.textContent =
+    data.sourceMode === "live" ? "Live" : data.sourceMode === "mixed" ? "Live + Demo" : "Demo mode";
+  gscRange.textContent = `${gsc.siteUrl || "-"} · ${gsc.range?.startDate || "-"} ~ ${gsc.range?.endDate || "-"}`;
+  ga4Range.textContent = `${ga4.propertyId ? "property " + ga4.propertyId : "-"} · ${ga4.range?.startDate || "-"} ~ ${ga4.range?.endDate || "-"}`;
+
+  const delta = gsc.delta;
+  gscSummary.innerHTML = [
+    ["自然点击", compactNum(gscTotals.clicks)],
+    ["曝光量", compactNum(gscTotals.impressions)],
+    ["CTR", percent(gscTotals.ctr)],
+    ["平均排名", Number(gscTotals.position || 0).toFixed(1)],
+    ["有数据词数", compactNum(gscTotals.queryCount || (gsc.queries || []).length)],
+    [
+      "点击环比",
+      delta
+        ? `${delta.clicks >= 0 ? "+" : ""}${(delta.clicks * 100).toFixed(1)}%（后 ${delta.halfDays} 天 vs 前 ${delta.halfDays} 天）`
+        : "样本不足"
+    ]
+  ]
+    .map(([label, value]) => `<div class="summary-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`)
+    .join("");
+
+  ga4Summary.innerHTML = [
+    ["活跃用户", compactNum(ga4Totals.activeUsers)],
+    ["会话数", compactNum(ga4Totals.sessions)],
+    ["页面浏览", compactNum(ga4Totals.screenPageViews)],
+    ["互动率", percent(ga4Totals.engagementRate)],
+    ["平均时长", `${Math.round(ga4Totals.averageSessionDuration || 0)}s`],
+    ["转化数 / 转化率", `${compactNum(ga4Totals.conversions)} / ${percent(data.summary?.cvr)}`]
+  ]
+    .map(([label, value]) => `<div class="summary-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`)
+    .join("");
+
+  gscQueries.innerHTML = renderBars(
+    (gsc.queries || []).slice(0, 8).map(item => ({
+      label: item.query,
+      value: `${compactNum(item.impressions)} 曝光 · ${compactNum(item.clicks)} 点击 · CTR ${percent(item.ctr)}`,
+      ratio: item.impressions,
+      badge: `第 ${Number(item.position || 0).toFixed(1)} 位`
+    }))
+  );
+
+  const totalSessions = (ga4.channels || []).reduce((sum, item) => sum + (item.sessions || 0), 0) || 1;
+  ga4Channels.innerHTML = renderBars(
+    (ga4.channels || []).slice(0, 6).map(item => ({
+      label: item.sessionDefaultChannelGroup,
+      value: `${compactNum(item.sessions)} 会话 · 互动率 ${percent(item.engagementRate)}`,
+      ratio: (item.sessions || 0) / totalSessions,
+      badge: `${((item.sessions || 0) / totalSessions * 100).toFixed(1)}%`
+    }))
+  );
+
+  gscOpportunities.innerHTML = renderBars(
+    (gsc.opportunities || []).slice(0, 8).map(item => ({
+      label: item.query,
+      value: item.reasons.join("；"),
+      ratio: item.impressions,
+      badge: `CTR ${percent(item.ctr)}`
+    })),
+    "当前窗口没有明显的机会词（曝光 ≥ 50 且 CTR 低于同排名正常值）。"
+  );
+
+  ga4Pages.innerHTML = renderBars(
+    (ga4.pages || []).slice(0, 8).map(item => ({
+      label: item.pagePath,
+      value: `${compactNum(item.screenPageViews)} 浏览 · ${compactNum(item.activeUsers)} 用户`,
+      ratio: item.screenPageViews,
+      badge: `互动率 ${percent(item.engagementRate)}`,
+      weak: Number(item.engagementRate || 0) < 0.4
+    }))
+  );
+
+  const insights = data.insights || [];
+  const warnings = [...(data.warnings || []), ...(gsc.warnings || []).map(m => ({ source: "gsc", message: m })), ...(ga4.warnings || []).map(m => ({ source: "ga4", message: m }))];
+
+  siteInsights.innerHTML =
+    insights
+      .map(
+        insight => `
+        <article class="insight-card ${escapeHtml(insight.priority.toLowerCase())}">
+          <div class="insight-head">
+            <span class="priority-pill">${escapeHtml(insight.priority)}</span>
+            <strong>${escapeHtml(insight.title)}</strong>
+          </div>
+          <p class="insight-evidence">证据：${escapeHtml(insight.evidence)}</p>
+          <p class="insight-action">动作：${escapeHtml(insight.action)}</p>
+          ${
+            insight.items && insight.items.length
+              ? `<div class="chip-list">${insight.items
+                  .slice(0, 5)
+                  .map(item => `<span class="chip">${escapeHtml(item.label)} · ${escapeHtml(item.value)}</span>`)
+                  .join("")}</div>`
+              : ""
+          }
+        </article>`
+      )
+      .join("") +
+    (warnings.length
+      ? `<div class="site-warnings">${warnings
+          .map(item => `<p><strong>${escapeHtml(item.source)}：</strong>${escapeHtml(item.message)}</p>`)
+          .join("")}</div>`
+      : "");
+
+  if (!insights.length) {
+    siteInsights.innerHTML = '<div class="empty-state">当前数据窗口没有触发洞察阈值。</div>';
+  }
+
+  const demo = data.sourceMode !== "live";
+  siteNote.textContent = demo
+    ? "当前含演示数据。配置 GOOGLE_SERVICE_ACCOUNT_* + GSC_SITE_URL / GA4_PROPERTY_ID 后自动切 live。"
+    : `已取到 live 数据：GSC ${gscQueries_count(gsc)} 个词，GA4 ${(ga4.channels || []).length} 个渠道。`;
+}
+
+function gscQueries_count(gsc) {
+  return (gsc.queries || []).length;
+}
+
+function renderBars(items, emptyText = "暂无数据。") {
+  if (!items.length) return `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+  const max = Math.max(...items.map(item => Number(item.ratio || 0)), 0) || 1;
+  return items
+    .map(
+      item => `
+        <article class="site-item ${item.weak ? "weak" : ""}">
+          <div class="item-top">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span class="score">${escapeHtml(item.badge || "")}</span>
+          </div>
+          <div class="bar"><span style="width: ${Math.min(100, (Number(item.ratio || 0) / max) * 100).toFixed(1)}%"></span></div>
+          <p class="item-copy">${escapeHtml(item.value)}</p>
+        </article>`
+    )
+    .join("");
+}
+
+function compactNum(value) {
+  const number = Number(value || 0);
+  if (Math.abs(number) >= 1_000_000) return `${(number / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(number) >= 1_000) return `${(number / 1_000).toFixed(1)}K`;
+  return String(Math.round(number * 100) / 100);
+}
+
 function renderAds() {
   const ads = state.report?.ads || [];
   const sorted = [...ads].sort((a, b) => {
@@ -661,7 +864,7 @@ function renderSources(status) {
           </div>
           <p class="item-copy">${escapeHtml(source.route)} · ${escapeHtml(source.mode)} · ${escapeHtml(source.access)}</p>
           <p class="item-copy">${escapeHtml(renderMissingConfig(source))}</p>
-          <a href="${source.sourceUrl}" target="_blank" rel="noreferrer">打开透明度中心</a>
+          <a href="${source.sourceUrl}" target="_blank" rel="noreferrer">${source.platform === "gsc" || source.platform === "ga4" ? "打开控制台" : "打开透明度中心"}</a>
         </article>
       `
     )

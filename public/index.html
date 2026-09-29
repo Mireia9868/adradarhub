@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="ltLCpahRzWe3RWOR04OrpB" />
     <title>Ad Trend Radar</title>
     <link rel="stylesheet" href="/styles.css" data-page-node-id="72OP5iEoBivw0QjFKQQyde" />
+    <!--SITE_TAGS-->
   </head>
   <body data-page-node-id="DD4hEO4mI1aNGgyZvy6kAE">
     <div class="aurora" aria-hidden="true" data-page-node-id="hCfuYw5WHGwBl3AW2u79QG">
@@ -54,6 +55,10 @@
           <button class="nav-item" data-section="generate" title="Generate" data-page-node-id="oDtgCyI6dPhxpKdvN03elE">
             <span aria-hidden="true" data-page-node-id="qDTRwbpz4e0f2LuJGsGoAV">✦</span>
             <span data-page-node-id="NiocyEHzkj6MhWTY54KvSh">素材生成</span>
+          </button>
+          <button class="nav-item" data-section="site" title="Site data">
+            <span aria-hidden="true">◍</span>
+            <span>站点数据</span>
           </button>
           <button class="nav-item" data-section="sources" title="Sources" data-page-node-id="1GLjrh9j6BGx0PUBCAbmyp">
             <span aria-hidden="true" data-page-node-id="3FNDCN5zzpiOEdSflvD3mE">◎</span>
@@ -368,6 +373,103 @@ Google 标题覆盖高意图关键词
 
             <div id="genResults" class="gen-results" data-page-node-id="TJg6sRkaYkfZkkixYqVtCh"></div>
           </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="site">
+          <div class="content-grid">
+            <section class="panel span-12" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>站点数据 · GSC + GA4</h2>
+                  <p>自然搜索需求侧（曝光 / 点击 / 排名）与站内供给侧（渠道 / 落地页 / 转化）合并看，输出可直接派工的动作。</p>
+                </div>
+                <span class="mini-label" id="siteMode">Demo</span>
+              </div>
+
+              <form id="siteForm" class="iteration-form">
+                <label class="field">
+                  <span>站点域名</span>
+                  <input id="siteWebsite" type="text" value="adradarhub.com" placeholder="adradarhub.com" autocomplete="url" />
+                </label>
+                <label class="field">
+                  <span>GSC 媒体资源 siteUrl</span>
+                  <input id="siteUrlInput" type="text" placeholder="留空用服务端 GSC_SITE_URL，例如 sc-domain:adradarhub.com" />
+                </label>
+                <label class="field">
+                  <span>GA4 媒体资源 ID</span>
+                  <input id="ga4PropertyInput" type="text" placeholder="留空用服务端 GA4_PROPERTY_ID，纯数字" />
+                </label>
+                <label class="field">
+                  <span>时间窗口</span>
+                  <select id="siteSinceDays">
+                    <option value="7">近 7 天</option>
+                    <option value="28" selected>近 28 天</option>
+                    <option value="56">近 56 天</option>
+                    <option value="90">近 90 天</option>
+                  </select>
+                </label>
+                <button class="run-button" id="siteButton" type="submit">
+                  <span aria-hidden="true">◍</span>
+                  <span>拉取站点数据</span>
+                </button>
+              </form>
+              <p class="site-note" id="siteNote">未配置 Google 服务账号时返回演示数据，页面流程与字段含义可直接演示。</p>
+            </section>
+
+            <section class="panel span-6" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>Search Console</h2>
+                  <p id="gscRange">等待拉取</p>
+                </div>
+              </div>
+              <div id="gscSummary" class="summary-list"></div>
+              <div class="site-subtitle">自然搜索词 Top 8（按曝光）</div>
+              <div id="gscQueries" class="site-list"></div>
+            </section>
+
+            <section class="panel span-6" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>Google Analytics 4</h2>
+                  <p id="ga4Range">等待拉取</p>
+                </div>
+              </div>
+              <div id="ga4Summary" class="summary-list"></div>
+              <div class="site-subtitle">流量渠道结构</div>
+              <div id="ga4Channels" class="site-list"></div>
+            </section>
+
+            <section class="panel span-12" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>可执行洞察</h2>
+                  <p>按优先级排序，每条带证据数字与具体动作。</p>
+                </div>
+              </div>
+              <div id="siteInsights" class="insight-list"></div>
+            </section>
+
+            <section class="panel span-6" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>机会词</h2>
+                  <p>高曝光低 CTR，或排名第 4–15 位临门一脚。</p>
+                </div>
+              </div>
+              <div id="gscOpportunities" class="site-list"></div>
+            </section>
+
+            <section class="panel span-6" data-panel="site">
+              <div class="panel-header">
+                <div>
+                  <h2>落地页表现</h2>
+                  <p>互动率低于 40% 且浏览量较大的页面是预算漏斗。</p>
+                </div>
+              </div>
+              <div id="ga4Pages" class="site-list"></div>
+            </section>
           </div>
         </section>
 

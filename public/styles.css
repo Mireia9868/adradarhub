@@ -2082,3 +2082,125 @@ button {
     display: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   站点数据（GSC + GA4）
+   -------------------------------------------------------------------------- */
+.site-list,
+.insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.site-subtitle {
+  margin: 14px 0 8px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.site-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
+  animation: card-in 0.5s var(--ease-out) both;
+}
+
+.site-item:hover {
+  border-color: rgba(10, 114, 255, 0.28);
+  background: rgba(0, 140, 255, 0.06);
+}
+
+.site-item.weak {
+  border-left: 3px solid var(--coral);
+}
+
+.site-item .item-top strong {
+  font-size: 13px;
+}
+
+.insight-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.78);
+  animation: card-in 0.5s var(--ease-out) both;
+}
+
+.insight-card.p0 {
+  border-left-color: var(--coral);
+}
+
+.insight-card.p1 {
+  border-left-color: var(--gold);
+}
+
+.insight-card.p2 {
+  border-left-color: var(--teal);
+}
+
+.insight-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.insight-head strong {
+  font-size: 14px;
+}
+
+.priority-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--grad-main);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.insight-evidence,
+.insight-action {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.insight-action {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.site-warnings {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(201, 122, 6, 0.06);
+}
+
+.site-warnings p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}

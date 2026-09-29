@@ -1,6 +1,8 @@
 const { fetchPlatformIntel, getConnectorStatus } = require("./connectors/transparency");
 const { fetchYouTubeIntel, getYoutubeStatus } = require("./connectors/youtubeConnector");
 const { fetchTikTokIntel, getTikTokStatus } = require("./connectors/tiktokConnector");
+const { getGscStatus } = require("./connectors/gscConnector");
+const { getGa4Status } = require("./connectors/ga4Connector");
 const { createDemoIntel } = require("./mockIntel");
 
 const DEFAULT_MARKETS = ["US", "GB", "CA", "AU"];
@@ -111,7 +113,9 @@ function getSourceStatus() {
     google: getConnectorStatus("google"),
     bing: getConnectorStatus("bing"),
     youtube: getYoutubeStatus(),
-    tiktok: getTikTokStatus()
+    tiktok: getTikTokStatus(),
+    gsc: getGscStatus(),
+    ga4: getGa4Status()
   };
 }
 

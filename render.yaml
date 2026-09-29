@@ -74,3 +74,21 @@ services:
         value: "10"
       - key: QUOTA_UTC_OFFSET
         value: "8"
+      # GSC + GA4：服务账号密钥（JSON 整段或 EMAIL + PRIVATE_KEY），值在 Render Dashboard 手动填。
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        sync: false
+      - key: GSC_SITE_URL
+        sync: false
+      - key: GA4_PROPERTY_ID
+        sync: false
+      - key: SITE_ANALYTICS_SINCE_DAYS
+        value: "28"
+      # 站点自身的 GA4 统计与 GSC 验证（注入到 index.html，不进仓库）
+      - key: GA4_MEASUREMENT_ID
+        sync: false
+      - key: GSC_VERIFICATION_CODE
+        sync: false

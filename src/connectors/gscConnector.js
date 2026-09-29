@@ -1,3 +1,4 @@
+const { tr } = require("../i18n");
 // Google Search Console connector（Webmasters Search Analytics API v3）。
 // 拉的是"自然搜索"这一侧的真实表现：曝光、点击、CTR、排名。
 // 广告侧数据在 Bing/Meta/Google 透明度中心，这里补的是搜索需求侧，
@@ -15,7 +16,7 @@ const DEFAULT_DELAY_DAYS = 2;
 async function fetchGscData(query = {}) {
   const siteUrl = resolveSiteUrl(query.siteUrl || query.website || process.env.GSC_SITE_URL);
   if (!siteUrl) {
-    throw new Error("gsc_site_url_missing: 未指定 GSC 媒体资源（sc-domain:example.com 或 https://example.com/）");
+    throw new Error(tr("gsc.error.siteUrlMissing"));
   }
 
   const sinceDays = clampInt(Number(query.sinceDays || process.env.GSC_SINCE_DAYS || 28), 3, 180);
@@ -87,7 +88,7 @@ async function fetchGscData(query = {}) {
 
   const warnings = [];
   if (!queries.length && !pages.length) {
-    warnings.push(`GSC 在 ${range.startDate} ~ ${range.endDate} 内没有返回数据：媒体资源可能刚验证或索引量为 0。`);
+    warnings.push(tr("gsc.warning.empty", { start: range.startDate, end: range.endDate }));
   }
 
   return {
@@ -143,11 +144,16 @@ async function request(url, options, token) {
     // 403 = 服务账号没被加进该媒体资源的用户列表，是最常见的接入失败原因。
     if (response.status === 403) {
       throw new Error(
-        `gsc_permission_denied: 服务账号没有该媒体资源权限。去 GSC → 设置 → 用户和权限，把服务账号邮箱加为「受限用户」或「所有者」。${detail}`
+        tr("gsc.error.permissionDenied", { detail })
       );
     }
     if (response.status === 404) {
-      throw new Error(`gsc_site_not_found: 媒体资源不存在或 siteUrl 写法不对（当前 ${decodeURIComponent(url.split("/sites/")[1]?.split("/")[0] || "")}）。${detail}`);
+      throw new Error(
+        tr("gsc.error.siteNotFound", {
+          site: decodeURIComponent(url.split("/sites/")[1]?.split("/")[0] || ""),
+          detail
+        })
+      );
     }
     throw new Error(`gsc_api_failed:${response.status}:${detail}`);
   }
@@ -213,8 +219,15 @@ function findOpportunities(queries) {
       const expectedCtr = expectedCtrByPosition(item.position);
       const ctrGap = expectedCtr - item.ctr;
       const reasons = [];
-      if (item.position > 3 && item.position <= 15) reasons.push(`排名第 ${item.position.toFixed(1)} 位，冲进前 3 点击可翻倍级增长`);
-      if (ctrGap > 0.01) reasons.push(`CTR ${(item.ctr * 100).toFixed(1)}% 低于同排名正常值 ${(expectedCtr * 100).toFixed(1)}%`);
+      if (item.position > 3 && item.position <= 15)
+        reasons.push(tr("gsc.reason.nearTop", { p: item.position.toFixed(1) }));
+      if (ctrGap > 0.01)
+        reasons.push(
+          tr("gsc.reason.ctrGap", {
+            c: (item.ctr * 100).toFixed(1),
+            e: (expectedCtr * 100).toFixed(1)
+          })
+        );
       if (!reasons.length) return null;
       const score = Math.round(
         item.impressions * Math.max(ctrGap, 0) * 100 + (item.position > 3 && item.position <= 15 ? 40 : 0) + Math.min(item.impressions / 20, 30)
@@ -293,7 +306,7 @@ function getGscStatus() {
     missing: configured
       ? []
       : ["GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GSC_SITE_URL"],
-    detail: siteUrl ? `siteUrl=${siteUrl}` : "未配置 GSC 媒体资源",
+    detail: siteUrl ? tr("gsc.status.detail", { site: siteUrl }) : tr("gsc.status.notConfigured"),
     sourceUrl: "https://search.google.com/search-console"
   };
 }
@@ -368,7 +381,7 @@ function createGscDemo(query = {}) {
     ],
     opportunities: findOpportunities(queries),
     warnings: [
-      "GSC 未配置，当前为演示数据。配置 GOOGLE_SERVICE_ACCOUNT_* 与 GSC_SITE_URL 后自动切 live。"
+      tr("gsc.demoWarning")
     ]
   };
 }

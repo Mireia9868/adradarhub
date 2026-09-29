@@ -2204,3 +2204,39 @@ button {
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* ==========================================================================
+   语言切换（EN / 中文）
+   ========================================================================== */
+.lang-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.lang-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.lang-btn:hover {
+  color: var(--ink);
+}
+
+.lang-btn.active {
+  background: var(--grad-main);
+  color: #fff;
+  box-shadow: var(--glow);
+}

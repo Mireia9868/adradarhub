@@ -2,6 +2,7 @@ const http = require("node:http");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const { loadEnv } = require("./src/env");
+const { setLang, getLang } = require("./src/i18n");
 const { createIntelReport, getSourceStatus } = require("./src/intel");
 const { checkApiConnections } = require("./src/apiHealth");
 const { createIterationPlan } = require("./src/iteration");
@@ -45,6 +46,7 @@ const mimeTypes = {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
+    setLang(url.searchParams.get("lang") || "");
 
     if (req.method === "GET" && url.pathname === "/api/source-status") {
       return sendJson(res, 200, getSourceStatus());
@@ -169,17 +171,27 @@ const server = http.createServer(async (req, res) => {
         if (process.env.DEEPSEEK_API_KEY) {
           const text = await chatCompletion({
             system:
-              "你是资深海外广告投放操盘手，擅长把竞品视频情报转成可执行的广告素材 Brief。" +
-              "输出简体中文，结构清晰，可直接交给素材与投放同学执行。只使用输入中给出的事实，不要编造数据。",
+              getLang() === "zh"
+                ? "你是资深海外广告投放操盘手，擅长把竞品视频情报转成可执行的广告素材 Brief。输出简体中文，结构清晰，可直接交给素材与投放同学执行。只使用输入中给出的事实，不要编造数据。"
+                : "You are a senior overseas advertising operator who turns competitor video intel into executable ad creative briefs. Output in English, clearly structured and ready to hand to creative and media teams. Only use facts given in the input; never invent data.",
             prompt:
-              `竞品视频情报如下（JSON）：\n${JSON.stringify(video, null, 2)}\n\n` +
-              `我方品牌：${body.brand || "未指定"}。请输出一份投放素材 Brief，包含：\n` +
-              "1. 视频情报速览（两句话：这条视频为什么值得跟）；\n" +
-              "2. Hook 拆解（前 3 秒可能的抓人方式）；\n" +
-              "3. 结构复刻脚本（0-5s / 5-20s / 20-45s / 结尾 CTA）；\n" +
-              "4. 卖点映射：结构套用到我方品牌；\n" +
-              "5. 投放标题 ×3；\n6. 缩略图方向 ×2；\n" +
-              "7. 投放建议（剪辑规格与适配平台）。",
+              getLang() === "zh"
+                ? `竞品视频情报如下（JSON）：\n${JSON.stringify(video, null, 2)}\n\n` +
+                  `我方品牌：${body.brand || "未指定"}。请输出一份投放素材 Brief，包含：\n` +
+                  "1. 视频情报速览（两句话：这条视频为什么值得跟）；\n" +
+                  "2. Hook 拆解（前 3 秒可能的抓人方式）；\n" +
+                  "3. 结构复刻脚本（0-5s / 5-20s / 20-45s / 结尾 CTA）；\n" +
+                  "4. 卖点映射：结构套用到我方品牌；\n" +
+                  "5. 投放标题 ×3；\n6. 缩略图方向 ×2；\n" +
+                  "7. 投放建议（剪辑规格与适配平台）。"
+                : `Competitor video intel (JSON):\n${JSON.stringify(video, null, 2)}\n\n` +
+                  `Our brand: ${body.brand || "not specified"}. Produce an ad creative brief containing:\n` +
+                  "1. Video intel summary (two sentences on why this video is worth following);\n" +
+                  "2. Hook teardown (how the first 3 seconds grab attention);\n" +
+                  "3. Structure replication script (0-5s / 5-20s / 20-45s / closing CTA);\n" +
+                  "4. Selling point mapping: apply the structure to our brand;\n" +
+                  "5. Three ad headlines;\n6. Two thumbnail directions;\n" +
+                  "7. Placement recommendations (edit specs and platforms).",
             temperature: 0.6,
             maxTokens: 1400
           });
@@ -204,18 +216,29 @@ const server = http.createServer(async (req, res) => {
         if (process.env.DEEPSEEK_API_KEY) {
           const text = await chatCompletion({
             system:
-              "你是资深 TikTok 投流操盘手，擅长把竞品短视频情报转成可直接开拍、可直接投放的素材 Brief。" +
-              "输出简体中文，结构清晰。只使用输入中给出的事实，不要编造数据。",
+              getLang() === "zh"
+                ? "你是资深 TikTok 投流操盘手，擅长把竞品短视频情报转成可直接开拍、可直接投放的素材 Brief。输出简体中文，结构清晰。只使用输入中给出的事实，不要编造数据。"
+                : "You are a senior TikTok media buyer who turns competitor short-video intel into a creative brief that can be shot and launched as-is. Output in English, clearly structured. Only use facts given in the input; never invent data.",
             prompt:
-              `TikTok 竞品视频情报如下（JSON）：\n${JSON.stringify(video, null, 2)}\n\n` +
-              `我方品牌：${body.brand || "未指定"}。请输出一份短视频投放 Brief，包含：\n` +
-              "1. 视频情报速览（两句话：这条为什么值得跟）；\n" +
-              "2. Hook 拆解（前 3 秒画面 / 字幕 / 口播各自的抓点）；\n" +
-              "3. 结构复刻脚本（0-3s / 3-15s / 15-30s / 结尾 CTA）；\n" +
-              "4. 卖点映射：如何套用到我方品牌，保留哪些结构、替换哪些内容；\n" +
-              "5. 文案 ×3（含字幕首句）；\n" +
-              "6. 拍摄规格（竖版比例、时长、镜头数、字幕与 BGM 要求）；\n" +
-              "7. 投放建议（适用版位、预算赛马方式、能否复用 Reels / Shorts）。",
+              getLang() === "zh"
+                ? `TikTok 竞品视频情报如下（JSON）：\n${JSON.stringify(video, null, 2)}\n\n` +
+                  `我方品牌：${body.brand || "未指定"}。请输出一份短视频投放 Brief，包含：\n` +
+                  "1. 视频情报速览（两句话：这条为什么值得跟）；\n" +
+                  "2. Hook 拆解（前 3 秒画面 / 字幕 / 口播各自的抓点）；\n" +
+                  "3. 结构复刻脚本（0-3s / 3-15s / 15-30s / 结尾 CTA）；\n" +
+                  "4. 卖点映射：如何套用到我方品牌，保留哪些结构、替换哪些内容；\n" +
+                  "5. 文案 ×3（含字幕首句）；\n" +
+                  "6. 拍摄规格（竖版比例、时长、镜头数、字幕与 BGM 要求）；\n" +
+                  "7. 投放建议（适用版位、预算赛马方式、能否复用 Reels / Shorts）。"
+                : `TikTok competitor video intel (JSON):\n${JSON.stringify(video, null, 2)}\n\n` +
+                  `Our brand: ${body.brand || "not specified"}. Produce a short-video ad brief containing:\n` +
+                  "1. Video intel summary (two sentences on why this is worth following);\n" +
+                  "2. Hook teardown (visual / caption / voiceover hooks in the first 3 seconds);\n" +
+                  "3. Structure replication script (0-3s / 3-15s / 15-30s / closing CTA);\n" +
+                  "4. Selling point mapping: how to apply it to our brand, what structure to keep and what to swap;\n" +
+                  "5. Three copies (including the opening caption line);\n" +
+                  "6. Shooting specs (vertical ratio, duration, shot count, caption and BGM requirements);\n" +
+                  "7. Placement recommendations (placements, budget horse-racing, reuse for Reels / Shorts).",
             temperature: 0.6,
             maxTokens: 1400
           });
@@ -346,7 +369,9 @@ function readJson(req) {
     });
     req.on("end", () => {
       try {
-        resolve(rawBody ? JSON.parse(rawBody) : {});
+        const parsedBody = rawBody ? JSON.parse(rawBody) : {};
+        if (parsedBody && typeof parsedBody.lang === "string") setLang(parsedBody.lang);
+        resolve(parsedBody);
       } catch {
         reject(Object.assign(new Error("invalid_json"), { statusCode: 400 }));
       }

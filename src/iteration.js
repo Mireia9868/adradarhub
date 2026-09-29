@@ -1,10 +1,14 @@
-const LEVELS = [
-  ["global", "客户基线"],
-  ["brand", "品牌"],
-  ["market", "市场"],
-  ["channel", "平台"],
-  ["campaign", "活动"]
-];
+const { tr, getLang } = require("./i18n");
+
+function getLevels() {
+  return [
+    ["global", tr("iter.level.global")],
+    ["brand", tr("iter.level.brand")],
+    ["market", tr("iter.level.market")],
+    ["channel", tr("iter.level.channel")],
+    ["campaign", tr("iter.level.campaign")]
+  ];
+}
 
 const LIST_FIELDS = [
   "requiredElements",
@@ -17,35 +21,37 @@ const LIST_FIELDS = [
 
 const SCALAR_FIELDS = ["objective", "tone", "landingPage", "primaryKpi"];
 
-const DEFAULT_HIERARCHY = {
-  global: {
-    objective: "提升海外新客转化效率",
-    tone: "可信、直接、有价格锚点",
-    primaryKpi: "ROAS",
-    requiredElements: ["品牌名", "核心产品", "明确 CTA"],
-    bannedClaims: ["绝对化第一", "未经证明的疗效", "永久最低价"],
-    visualRules: ["首屏展示真实产品", "前 3 秒出现核心卖点"],
-    offerRules: ["优惠必须有有效期", "价格信息与落地页一致"],
-    complianceNotes: ["素材文案与目标市场广告政策一致"]
-  },
-  brand: {
-    requiredElements: ["海外配送承诺", "售后保障"],
-    visualRules: ["避免纯库存图", "保留品牌识别色"]
-  },
-  market: {
-    requiredElements: ["本地货币或本地权益"],
-    bannedClaims: ["夸大配送时效"],
-    offerRules: ["按市场区分免邮门槛"]
-  },
-  channel: {
-    visualRules: ["Meta 优先短视频首帧钩子", "Google 保持标题关键词覆盖"],
-    complianceNotes: ["不同平台 CTA 与审核规范匹配"]
-  },
-  campaign: {
-    requiredElements: ["本轮测试角度"],
-    offerRules: ["每个角度至少保留一个无折扣对照组"]
-  }
-};
+function getDefaultHierarchy() {
+  return {
+    global: {
+      objective: tr("iter.objective"),
+      tone: tr("iter.tone"),
+      primaryKpi: "ROAS",
+      requiredElements: tr("iter.default.global.required"),
+      bannedClaims: tr("iter.default.global.banned"),
+      visualRules: tr("iter.default.global.visual"),
+      offerRules: tr("iter.default.global.offer"),
+      complianceNotes: tr("iter.default.global.compliance")
+    },
+    brand: {
+      requiredElements: tr("iter.default.brand.required"),
+      visualRules: tr("iter.default.brand.visual")
+    },
+    market: {
+      requiredElements: tr("iter.default.market.required"),
+      bannedClaims: tr("iter.default.market.banned"),
+      offerRules: tr("iter.default.market.offer")
+    },
+    channel: {
+      visualRules: tr("iter.default.channel.visual"),
+      complianceNotes: tr("iter.default.channel.compliance")
+    },
+    campaign: {
+      requiredElements: tr("iter.default.campaign.required"),
+      offerRules: tr("iter.default.campaign.offer")
+    }
+  };
+}
 
 const SAMPLE_PLATFORM_ROWS = [
   {
@@ -91,7 +97,7 @@ const SAMPLE_PLATFORM_ROWS = [
 ];
 
 function createIterationPlan(input = {}) {
-  const hierarchy = mergeHierarchy(DEFAULT_HIERARCHY, input.hierarchy || {});
+  const hierarchy = mergeHierarchy(getDefaultHierarchy(), input.hierarchy || {});
   const effectiveRequirements = inheritRequirements(hierarchy);
   const rows = normalizePlatformRows(input.platformRows || parseCsv(input.platformCsv));
   const platformRows = rows.length ? rows : normalizePlatformRows(SAMPLE_PLATFORM_ROWS);
@@ -127,7 +133,7 @@ function createIterationPlan(input = {}) {
 
 function mergeHierarchy(defaults, input) {
   const merged = {};
-  for (const [key] of LEVELS) {
+  for (const [key] of getLevels()) {
     merged[key] = {
       ...(defaults[key] || {}),
       ...(input[key] || {})
@@ -140,7 +146,7 @@ function inheritRequirements(hierarchy) {
   const effective = {};
   for (const field of LIST_FIELDS) effective[field] = [];
 
-  for (const [level] of LEVELS) {
+  for (const [level] of getLevels()) {
     const node = hierarchy[level] || {};
     for (const field of LIST_FIELDS) {
       effective[field] = unique([...effective[field], ...toList(node[field])]);
@@ -154,7 +160,7 @@ function inheritRequirements(hierarchy) {
 }
 
 function buildInheritanceChain(hierarchy) {
-  return LEVELS.map(([key, label]) => {
+  return getLevels().map(([key, label]) => {
     const node = hierarchy[key] || {};
     return {
       key,
@@ -242,29 +248,41 @@ function buildSignals(rows, benchmarks) {
     ...winners.map(row => ({
       type: "winner",
       creativeId: row.creativeId,
-      title: `${row.angle} 可放量`,
-      detail: `${row.platform} / ${row.campaign} 综合得分 ${row.score}，优先复制结构而不是只复制文案。`,
+      title: tr("iter.signal.scale.title", { angle: row.angle }),
+      detail: tr("iter.signal.scale.detail", {
+        platform: row.platform,
+        campaign: row.campaign,
+        score: row.score
+      }),
       priority: "High"
     })),
     ...lowHookRows.slice(0, 2).map(row => ({
       type: "hook_gap",
       creativeId: row.creativeId,
-      title: "首屏钩子需要重做",
-      detail: `${row.angle} CTR ${roundRate(row.ctr)}，低于导入数据均值 ${roundRate(benchmarks.ctr)}。`,
+      title: tr("iter.signal.hook.title"),
+      detail: tr("iter.signal.hook.detail", {
+        angle: row.angle,
+        ctr: roundRate(row.ctr),
+        avg: roundRate(benchmarks.ctr)
+      }),
       priority: "High"
     })),
     ...landingGapRows.slice(0, 2).map(row => ({
       type: "landing_gap",
       creativeId: row.creativeId,
-      title: "点击后转化承接不足",
-      detail: `${row.angle} 点击达标但 CVR ${roundRate(row.cvr)}，需要同步落地页首屏与价格信息。`,
+      title: tr("iter.signal.cvr.title"),
+      detail: tr("iter.signal.cvr.detail", { angle: row.angle, cvr: roundRate(row.cvr) }),
       priority: "Medium"
     })),
     ...risks.map(row => ({
       type: "risk",
       creativeId: row.creativeId,
-      title: "低效素材进入重构池",
-      detail: `${row.platform} / ${row.campaign} ROAS ${roundNumber(row.roas)}，建议降预算或改角度复测。`,
+      title: tr("iter.signal.rebuild.title"),
+      detail: tr("iter.signal.rebuild.detail", {
+        platform: row.platform,
+        campaign: row.campaign,
+        roas: roundNumber(row.roas)
+      }),
       priority: "Medium"
     }))
   ].slice(0, 8);
@@ -273,8 +291,8 @@ function buildSignals(rows, benchmarks) {
 function buildBacklog({ rows, signals, effectiveRequirements, trends, ads }) {
   const winners = rows.filter(row => row.score >= 100).sort((left, right) => right.score - left.score);
   const gaps = rows.filter(row => row.score < 100).sort((left, right) => left.score - right.score);
-  const topTrend = trends[0]?.name || winners[0]?.angle || "核心卖点";
-  const topAd = ads[0]?.headline || winners[0]?.hook || "高表现素材结构";
+  const topTrend = trends[0]?.name || winners[0]?.angle || tr("iter.fallback.angle");
+  const topAd = ads[0]?.headline || winners[0]?.hook || tr("iter.fallback.creative");
   const checklist = [
     ...effectiveRequirements.requiredElements.slice(0, 5),
     ...effectiveRequirements.visualRules.slice(0, 3)
@@ -286,10 +304,10 @@ function buildBacklog({ rows, signals, effectiveRequirements, trends, ads }) {
         index,
         row,
         priority: "P0",
-        problem: "已有高表现素材需要规模化变体",
-        hypothesis: `保留「${row.angle}」的利益点和节奏，换首帧、价格锚点与 CTA，可扩大受众覆盖。`,
-        actions: ["生成 3 个首帧版本", "保留同一落地页承接", "拆分新客与再营销受众"],
-        metric: "ROAS 不低于当前均值，CTR 提升 10%"
+        problem: tr("iter.brief.scale.problem"),
+        hypothesis: tr("iter.brief.scale.hypothesis", { angle: row.angle }),
+        actions: tr("iter.brief.scale.actions"),
+        metric: tr("iter.brief.scale.metric")
       })
     ),
     ...gaps.slice(0, 3).map((row, index) =>
@@ -297,26 +315,23 @@ function buildBacklog({ rows, signals, effectiveRequirements, trends, ads }) {
         index: index + 2,
         row,
         priority: index === 0 ? "P0" : "P1",
-        problem: row.ctr < 0.015 ? "点击吸引力不足" : "转化效率不足",
+        problem: row.ctr < 0.015 ? tr("iter.brief.ctr.problem") : tr("iter.brief.cvr.problem"),
         hypothesis:
           row.ctr < 0.015
-            ? `把「${topTrend}」放进前 3 秒，并更早展示产品结果，可改善弱钩子。`
-            : `同步广告承诺、价格权益与落地页首屏，可减少点击后的流失。`,
-        actions:
-          row.ctr < 0.015
-            ? ["重写前 3 秒字幕", "增加产品使用场景", "测试问题式标题"]
-            : ["核对优惠一致性", "强化信任模块", "单独测试免邮或分期权益"],
-        metric: row.ctr < 0.015 ? "CTR +20%，Thumb-stop rate +15%" : "CVR +15%，CPA -10%"
+            ? tr("iter.brief.ctr.hypothesis", { trend: topTrend })
+            : tr("iter.brief.cvr.hypothesis"),
+        actions: row.ctr < 0.015 ? tr("iter.brief.ctr.actions") : tr("iter.brief.cvr.actions"),
+        metric: row.ctr < 0.015 ? tr("iter.brief.ctr.metric") : tr("iter.brief.cvr.metric")
       })
     ),
     createBrief({
       index: 5,
       row: rows[0],
       priority: "P1",
-      problem: "客户规则需要被每轮素材稳定继承",
-      hypothesis: `把「${topAd}」拆成模板，并自动附加品牌、市场、平台和活动要求，可以减少返工。`,
-      actions: ["锁定必备元素检查", "生成违禁词扫描", "导出给设计与投手的 Brief"],
-      metric: "素材返工率下降，审核失败率下降"
+      problem: tr("iter.brief.inherit.problem"),
+      hypothesis: tr("iter.brief.inherit.hypothesis", { ad: topAd }),
+      actions: tr("iter.brief.inherit.actions"),
+      metric: tr("iter.brief.inherit.metric")
     })
   ];
 
@@ -344,14 +359,15 @@ function createBrief({ index, row, priority, problem, hypothesis, actions, metri
 }
 
 function buildCreativePrompt(brief, requirements) {
+  const separator = getLang() === "zh" ? "、" : ", ";
   return [
-    `为 ${brief.platform} 生成广告素材迭代方案。`,
-    `目标：${requirements.objective || "提升广告效率"}。`,
-    `语气：${requirements.tone || "清晰可信"}。`,
-    `角度：${brief.angle}。`,
-    `必须包含：${requirements.requiredElements.slice(0, 6).join("、")}。`,
-    `避免：${requirements.bannedClaims.slice(0, 5).join("、")}。`,
-    `输出：3 个标题、3 个首屏脚本、1 个设计 Brief、1 个落地页承接建议。`
+    tr("iter.prompt.line1", { platform: brief.platform }),
+    tr("iter.prompt.line2", { objective: requirements.objective || tr("iter.objectiveFallback") }),
+    tr("iter.prompt.line3", { tone: requirements.tone || tr("iter.toneFallback") }),
+    tr("iter.prompt.line4", { angle: brief.angle }),
+    tr("iter.prompt.line5", { items: requirements.requiredElements.slice(0, 6).join(separator) }),
+    tr("iter.prompt.line6", { items: requirements.bannedClaims.slice(0, 5).join(separator) }),
+    tr("iter.prompt.line7")
   ].join("\n");
 }
 

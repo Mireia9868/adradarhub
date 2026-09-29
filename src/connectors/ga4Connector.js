@@ -1,3 +1,4 @@
+const { tr } = require("../i18n");
 // Google Analytics 4 connector（Analytics Data API v1beta）。
 // 拉的是"进站之后发生了什么"：渠道结构、落地页表现、互动质量和转化。
 // GSC 看需求侧（曝光/排名），GA4 看供给侧（承接/转化），两者拼起来才完整。
@@ -18,7 +19,7 @@ const CONVERSION_METRICS = ["conversions", "keyEvents"];
 async function fetchGa4Data(query = {}) {
   const propertyId = resolvePropertyId(query.propertyId || process.env.GA4_PROPERTY_ID);
   if (!propertyId) {
-    throw new Error("ga4_property_id_missing: 未配置 GA4 媒体资源 ID（GA4 → 管理 → 媒体资源设置，纯数字）");
+    throw new Error(tr("ga4.error.propertyMissing"));
   }
 
   const sinceDays = clampInt(Number(query.sinceDays || process.env.GA4_SINCE_DAYS || 28), 3, 180);
@@ -78,7 +79,7 @@ async function fetchGa4Data(query = {}) {
 
   const warnings = [];
   if (!totals.sessions) {
-    warnings.push(`GA4 在 ${range.startDate} ~ ${range.endDate} 内没有会话数据：数据流可能未接入或 ID 填错。`);
+    warnings.push(tr("ga4.warning.empty", { start: range.startDate, end: range.endDate }));
   }
 
   return {
@@ -132,11 +133,11 @@ async function runReport(token, propertyId, body) {
     const detail = payload.error?.message || payload.message || "";
     if (response.status === 403) {
       throw new Error(
-        `ga4_permission_denied: 服务账号没有该 GA4 媒体资源权限。去 GA4 → 管理 → 媒体资源访问权限管理，把服务账号邮箱加为「查看者」。${detail}`
+        tr("ga4.error.permissionDenied", { detail })
       );
     }
     if (response.status === 404) {
-      throw new Error(`ga4_property_not_found: 媒体资源 ID ${propertyId} 不存在或已删除。${detail}`);
+      throw new Error(tr("ga4.error.propertyNotFound", { id: propertyId, detail }));
     }
     throw new Error(`ga4_api_failed:${response.status}:${detail}`);
   }
@@ -223,7 +224,7 @@ function getGa4Status() {
     missing: configured
       ? []
       : ["GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GA4_PROPERTY_ID"],
-    detail: propertyId ? `property=${propertyId}` : "未配置 GA4 媒体资源 ID",
+    detail: propertyId ? tr("ga4.status.detail", { id: propertyId }) : tr("ga4.status.notConfigured"),
     sourceUrl: "https://analytics.google.com/"
   };
 }
@@ -299,7 +300,7 @@ function createGa4Demo(query = {}) {
       { country: "Germany", activeUsers: 120, sessions: 160 }
     ],
     warnings: [
-      "GA4 未配置，当前为演示数据。配置 GOOGLE_SERVICE_ACCOUNT_* 与 GA4_PROPERTY_ID 后自动切 live。"
+      tr("ga4.demoWarning")
     ]
   };
 }

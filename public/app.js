@@ -171,7 +171,7 @@ function renderAuth() {
 function applyUsage(usage) {
   if (!usage) return;
   auth.usage = { ...auth.usage, ...usage };
-  authQuota.textContent = auth.usage.remaining > 0 ? `剩余 ${auth.usage.remaining} 次` : "今日额度已用完";
+  authQuota.textContent = auth.usage.remaining > 0 ? t("auth.quota", { n: auth.usage.remaining }) : t("auth.quotaEmpty");
   authQuota.classList.toggle("is-empty", auth.usage.remaining <= 0);
 }
 
@@ -189,12 +189,9 @@ function setAuthMode(mode) {
   authMode = mode;
   tabLogin.classList.toggle("active", mode === "login");
   tabSignup.classList.toggle("active", mode === "signup");
-  authTitle.textContent = mode === "login" ? "登录后开始使用" : "创建账号";
-  authSub.textContent =
-    mode === "login"
-      ? "登录后可每天拉取数据（额度每日重置）。"
-      : "免费注册即享每日额度，密码至少 8 位。";
-  authSubmitLabel.textContent = mode === "login" ? "登录" : "注册";
+  authTitle.textContent = mode === "login" ? t("auth.titleLogin") : t("auth.titleSignup");
+  authSub.textContent = mode === "login" ? t("auth.subLogin") : t("auth.subSignup");
+  authSubmitLabel.textContent = mode === "login" ? t("auth.submitLogin") : t("auth.submitSignup");
   authError.hidden = true;
 }
 
@@ -202,7 +199,8 @@ function setAuthMode(mode) {
 async function requestWithAuth(pathname, options = {}) {
   const headers = { "content-type": "application/json", ...(options.headers || {}) };
   if (auth.token) headers.authorization = `Bearer ${auth.token}`;
-  const response = await fetch(pathname, { ...options, headers });
+  const separator = pathname.includes("?") ? "&" : "?";
+  const response = await fetch(`${pathname}${separator}lang=${ATR_LANG}`, { ...options, headers });
 
   const remaining = response.headers.get("x-quota-remaining");
   if (remaining !== null) {
@@ -219,12 +217,12 @@ async function requestWithAuth(pathname, options = {}) {
     localStorage.removeItem(TOKEN_KEY);
     renderAuth();
     openAuthModal();
-    throw new Error("请先登录后再操作。");
+    throw new Error(t("auth.needLogin"));
   }
   if (response.status === 429) {
     const data = await response.json().catch(() => ({}));
     applyUsage({ remaining: 0 });
-    throw new Error(data.error || data.message || "今日额度已用完。");
+    throw new Error(data.error || data.message || t("auth.quotaEmpty"));
   }
   return response;
 }
@@ -273,7 +271,7 @@ async function submitAuth(event) {
   event.preventDefault();
   authError.hidden = true;
   authSubmit.disabled = true;
-  authSubmitLabel.textContent = authMode === "login" ? "登录中…" : "注册中…";
+  authSubmitLabel.textContent = authMode === "login" ? t("auth.submitLoginLoading") : t("auth.submitSignupLoading");
   try {
     const response = await fetch(authMode === "login" ? "/api/auth/login" : "/api/auth/signup", {
       method: "POST",
@@ -281,7 +279,7 @@ async function submitAuth(event) {
       body: JSON.stringify({ email: authEmail.value.trim(), password: authPassword.value })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || data.message || "操作失败，请重试。");
+    if (!response.ok) throw new Error(data.error || data.message || t("auth.loginFailed"));
     localStorage.setItem(TOKEN_KEY, data.token);
     auth.token = data.token;
     auth.user = data.user;
@@ -294,7 +292,7 @@ async function submitAuth(event) {
     authError.hidden = false;
   } finally {
     authSubmit.disabled = false;
-    authSubmitLabel.textContent = authMode === "login" ? "登录" : "注册";
+    authSubmitLabel.textContent = authMode === "login" ? t("auth.submitLogin") : t("auth.submitSignup");
   }
 }
 
@@ -322,12 +320,57 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape") closeAuthModal();
 });
 
+// 切语言后重跑所有动态渲染，避免页面残留上一语言
+window.onLangChange = () => {
+  setLoading(false);
+  setIterationLoading(false);
+  genButton.querySelector("span:last-child").textContent = t("gen.run");
+  dsButton.querySelector("span:last-child").textContent = t("gen.dsRun");
+  siteButton.querySelector("span:last-child").textContent = t("site.run");
+  if (state.report) {
+    renderReport();
+    setStatus(
+      state.report.sourceMode === "demo" ? t("mode.demo") : t("mode.live"),
+      t("query.done", { domain: state.report.query.domain, n: state.report.ads.length })
+    );
+  } else {
+    setStatus(t("status.ready"), t("status.readyDesc"));
+  }
+  if (state.report) runIteration();
+  else if (state.iteration) renderIteration();
+  if (state.site) reloadSiteForLang();
+  else siteNote.textContent = t("site.note");
+  loadSourceStatus();
+  renderAuth();
+  setAuthMode(authMode);
+};
+
+// 切语言后重拉站点数据：走 GET（不计配额），拿不到就保留上一份
+async function reloadSiteForLang() {
+  const params = new URLSearchParams({
+    lang: ATR_LANG,
+    website: document.querySelector("#siteWebsite").value.trim(),
+    siteUrl: document.querySelector("#siteUrlInput").value.trim(),
+    propertyId: document.querySelector("#ga4PropertyInput").value.trim(),
+    sinceDays: String(Number(document.querySelector("#siteSinceDays").value))
+  });
+  try {
+    const response = await fetch(`/api/site-analytics?${params.toString()}`);
+    if (!response.ok) return;
+    state.site = await response.json();
+    renderSite();
+  } catch (error) {
+    renderSite();
+  }
+}
+
+initLangSwitch();
 loadSourceStatus();
 initAuth().then(signedIn => {
   if (signedIn) {
     runIntel();
   } else {
-    setStatus("Login required", "请先登录或注册账号，登录后每天可拉取 10 次数据。");
+    setStatus(t("status.loginRequired"), t("auth.loginRequired"));
   }
 });
 
@@ -338,7 +381,7 @@ async function runIntel() {
   const platforms = [...document.querySelectorAll('input[name="platform"]:checked')].map(item => item.value);
 
   setLoading(true);
-  setStatus("Scanning", "正在拉取广告透明度中心数据，并生成竞品趋势信号。");
+  setStatus(t("query.running"), t("query.scanning"));
 
   try {
     const response = await requestWithAuth("/api/intel", {
@@ -355,18 +398,18 @@ async function runIntel() {
     renderReport();
     runIteration();
     setStatus(
-      state.report.sourceMode === "demo" ? "Demo mode" : "Live mixed",
-      `${state.report.query.domain} 已完成分析，当前返回 ${state.report.ads.length} 条广告素材。`
+      state.report.sourceMode === "demo" ? t("mode.demo") : t("mode.live"),
+      t("query.done", { domain: state.report.query.domain, n: state.report.ads.length })
     );
   } catch (error) {
-    setStatus("Error", `无法完成拉取：${error.message}`);
+    setStatus(t("status.error"), t("query.runError", { msg: error.message }));
   } finally {
     setLoading(false);
   }
 }
 
 async function loadSourceStatus() {
-  const response = await fetch("/api/source-status");
+  const response = await fetch(`/api/source-status?lang=${ATR_LANG}`);
   const status = await response.json();
   renderSources(status);
 }
@@ -379,7 +422,8 @@ function renderReport() {
   document.querySelector("#metricTrends").textContent = summary.trendsFound;
   document.querySelector("#metricAngle").textContent = summary.topAngle;
   document.querySelector("#modeLabel").textContent = state.report.sourceMode === "demo" ? "Demo mode" : "Live mixed";
-  document.querySelector("#modeHint").textContent = state.report.warnings.at(-1)?.message || "Connector ready";
+  document.querySelector("#modeHint").textContent =
+    state.report.warnings.at(-1)?.message || t("mode.ready");
 
   renderAds();
   renderCompetitors();
@@ -392,7 +436,7 @@ async function runIteration() {
 
   try {
     const hierarchy = buildHierarchyInput();
-    const response = await fetch("/api/iteration", {
+    const response = await fetch(`/api/iteration?lang=${ATR_LANG}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -411,7 +455,7 @@ async function runIteration() {
     state.iteration = await response.json();
     renderIteration();
   } catch (error) {
-    requirementList.innerHTML = `<div class="empty-state">无法生成迭代：${escapeHtml(error.message)}</div>`;
+    requirementList.innerHTML = `<div class="empty-state">${escapeHtml(t("iter.failed", { msg: error.message }))}</div>`;
   } finally {
     setIterationLoading(false);
   }
@@ -421,31 +465,44 @@ async function runDeepSeek() {
   const idea = dsIdea.value.trim();
   if (!idea) {
     dsOutput.hidden = false;
-    dsOutput.innerHTML = '<div class="empty-state">请先输入粗略想法或核心卖点。</div>';
+    dsOutput.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.dsEmpty"))}</div>`;
     return;
   }
   const platform = dsPlatform.value;
   const size = dsSize.value;
 
   dsButton.disabled = true;
-  dsButton.querySelector("span:last-child").textContent = "生成中…";
+  dsButton.querySelector("span:last-child").textContent = t("gen.dsRunning");
   dsOutput.hidden = false;
-  dsOutput.innerHTML = '<div class="empty-state">DeepSeek 正在撰写提示词与文案，约 5–20 秒…</div>';
+  dsOutput.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.dsWaiting"))}</div>`;
 
   try {
-    const system =
-      "你是资深海外广告创意总监，擅长把简短卖点扩写成可直接用于文生图模型的提示词以及配套广告文案。输出结构清晰、可直接复制。";
-    const prompt = [
-      `产品 / 卖点：${idea}`,
-      `目标平台：${platform}`,
-      `计划生成的画面比例：${size}`,
-      "",
-      "请使用 Markdown 输出以下内容：",
-      "1. **文生图提示词（中文，给 Qwen 用）**：在此冒号后直接写提示词，含主体、场景、光线、构图、色调、留白，控制在 80 字以内。",
-      "2. **英文提示词（English prompt）**：上面中文提示词的英文版，给海外模型使用。",
-      "3. **广告文案**：3 个标题（含钩子）+ 1 句主文案 + 1 个 CTA。",
-      "4. **风格与避坑**：1-2 句该平台素材应注意的视觉与合规要点。"
-    ].join("\n");
+    const isZh = ATR_LANG === "zh";
+    const system = isZh
+      ? "你是资深海外广告创意总监，擅长把简短卖点扩写成可直接用于文生图模型的提示词以及配套广告文案。输出结构清晰、可直接复制。"
+      : "You are a senior overseas advertising creative director. Turn a short selling point into a ready-to-use text-to-image prompt plus matching ad copy. Output must be structured and copy-paste ready.";
+    const prompt = isZh
+      ? [
+          `产品 / 卖点：${idea}`,
+          `目标平台：${platform}`,
+          `计划生成的画面比例：${size}`,
+          "",
+          "请使用 Markdown 输出以下内容：",
+          "1. **文生图提示词（中文，给 Qwen 用）**：在此冒号后直接写提示词，含主体、场景、光线、构图、色调、留白，控制在 80 字以内。",
+          "2. **英文提示词（English prompt）**：上面中文提示词的英文版，给海外模型使用。",
+          "3. **广告文案**：3 个标题（含钩子）+ 1 句主文案 + 1 个 CTA。",
+          "4. **风格与避坑**：1-2 句该平台素材应注意的视觉与合规要点。"
+        ].join("\n")
+      : [
+          `Product / selling point: ${idea}`,
+          `Target platform: ${platform}`,
+          `Planned aspect ratio: ${size}`,
+          "",
+          "Output the following in Markdown:",
+          "1. **Image prompt (English, for the image model)**: write the prompt right after this colon. Include subject, scene, lighting, composition, color tone and whitespace. Keep it under 60 words.",
+          "2. **Ad copy**: 3 headlines (with hooks) + 1 primary text + 1 CTA.",
+          "3. **Style & pitfalls**: 1-2 sentences on visual and compliance notes for this platform."
+        ].join("\n");
 
     const response = await requestWithAuth("/api/llm", {
       method: "POST",
@@ -453,14 +510,14 @@ async function runDeepSeek() {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || data.message || "生成失败");
+      throw new Error(data.error || data.message || t("gen.statusFailed"));
     }
 
     const cnPrompt = extractCnPrompt(data.text);
     dsOutput.innerHTML = `
       <div class="ds-result-head">
-        <strong>DeepSeek 生成结果</strong>
-        <button class="ghost-button" id="useDsPrompt" type="button">用此提示词生成图片 →</button>
+        <strong>${escapeHtml(t("gen.dsResult"))}</strong>
+        <button class="ghost-button" id="useDsPrompt" type="button">${escapeHtml(t("gen.dsUse"))}</button>
       </div>
       <pre class="ds-markdown">${escapeHtml(data.text)}</pre>
     `;
@@ -470,33 +527,34 @@ async function runDeepSeek() {
       runGenerate();
     });
   } catch (error) {
-    dsOutput.innerHTML = `<div class="empty-state">生成失败：${escapeHtml(error.message)}</div>`;
+    dsOutput.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.dsFailed", { msg: error.message }))}</div>`;
   } finally {
     dsButton.disabled = false;
-    dsButton.querySelector("span:last-child").textContent = "DeepSeek 生成提示词+文案";
+    dsButton.querySelector("span:last-child").textContent = t("gen.dsRun");
   }
 }
 
 function extractCnPrompt(text) {
-  const match = String(text || "").match(/文生图提示词（中文[^\n]*?[:：]\s*([^\n]+)/);
-  if (match) {
-    return match[1].trim().replace(/^[\s>*#\-]+/, "");
-  }
+  const raw = String(text || "");
+  const cn = raw.match(/文生图提示词（中文[^\n]*?[:：]\s*([^\n]+)/);
+  if (cn) return cn[1].trim().replace(/^[\s>*#\-]+/, "");
+  const en = raw.match(/\*\*Image prompt[^\n]*?\*\*[^\n]*?[:：]\s*([^\n]+)/i);
+  if (en) return en[1].trim().replace(/^[\s>*#\-]+/, "");
   return "";
 }
 
 async function runGenerate() {
   const prompt = genPrompt.value.trim();
   if (!prompt) {
-    genStatus.textContent = "请先输入提示词";
-    genResults.innerHTML = '<div class="empty-state">输入提示词后再生成。</div>';
+    genStatus.textContent = t("gen.emptyPrompt");
+    genResults.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.needPrompt"))}</div>`;
     return;
   }
 
   genButton.disabled = true;
-  genButton.querySelector("span:last-child").textContent = "生成中…";
-  genStatus.textContent = "Qwen 正在生成，约 10–40 秒";
-  genResults.innerHTML = '<div class="empty-state">生成中，请稍候…</div>';
+  genButton.querySelector("span:last-child").textContent = t("gen.running");
+  genStatus.textContent = t("gen.statusRunning");
+  genResults.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.statusWaiting"))}</div>`;
 
   try {
     const response = await requestWithAuth("/api/generate-image", {
@@ -509,25 +567,25 @@ async function runGenerate() {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || data.message || "生成失败");
+      throw new Error(data.error || data.message || t("gen.statusFailed"));
     }
 
     genResults.innerHTML = data.images
       .map(
         url => `
         <figure class="gen-card">
-          <img src="${escapeHtml(url)}" alt="生成素材" loading="lazy" />
-          <figcaption><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">打开原图</a></figcaption>
+          <img src="${escapeHtml(url)}" alt="${escapeHtml(t("gen.run"))}" loading="lazy" />
+          <figcaption><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(t("gen.openOriginal"))}</a></figcaption>
         </figure>`
       )
       .join("");
-    genStatus.textContent = `完成，已生成 ${data.images.length} 张`;
+    genStatus.textContent = t("gen.statusDone", { n: data.images.length });
   } catch (error) {
-    genStatus.textContent = "生成失败";
-    genResults.innerHTML = `<div class="empty-state">生成失败：${escapeHtml(error.message)}</div>`;
+    genStatus.textContent = t("gen.statusFailed");
+    genResults.innerHTML = `<div class="empty-state">${escapeHtml(t("gen.failed", { msg: error.message }))}</div>`;
   } finally {
     genButton.disabled = false;
-    genButton.querySelector("span:last-child").textContent = "生成素材";
+    genButton.querySelector("span:last-child").textContent = t("gen.run");
   }
 }
 
@@ -535,8 +593,8 @@ async function runSiteAnalytics() {
   const label = siteButton.querySelector("span:last-child");
   const original = label.textContent;
   siteButton.disabled = true;
-  label.textContent = "拉取中…";
-  siteNote.textContent = "正在拉取 GSC 与 GA4 数据…";
+  label.textContent = t("site.running");
+  siteNote.textContent = t("site.pulling");
 
   try {
     const response = await requestWithAuth("/api/site-analytics", {
@@ -554,8 +612,8 @@ async function runSiteAnalytics() {
     state.site = data;
     renderSite();
   } catch (error) {
-    siteNote.textContent = `拉取失败：${error.message}`;
-    siteInsights.innerHTML = `<div class="empty-state">拉取失败：${escapeHtml(error.message)}</div>`;
+    siteNote.textContent = t("site.failed", { msg: error.message });
+    siteInsights.innerHTML = `<div class="empty-state">${escapeHtml(t("site.failed", { msg: error.message }))}</div>`;
   } finally {
     siteButton.disabled = false;
     label.textContent = original;
@@ -573,33 +631,37 @@ function renderSite() {
 
   siteMode.textContent =
     data.sourceMode === "live" ? "Live" : data.sourceMode === "mixed" ? "Live + Demo" : "Demo mode";
-  gscRange.textContent = `${gsc.siteUrl || "-"} · ${gsc.range?.startDate || "-"} ~ ${gsc.range?.endDate || "-"}`;
-  ga4Range.textContent = `${ga4.propertyId ? "property " + ga4.propertyId : "-"} · ${ga4.range?.startDate || "-"} ~ ${ga4.range?.endDate || "-"}`;
+  const dash = t("common.dash");
+  gscRange.textContent = `${gsc.siteUrl || dash} · ${gsc.range?.startDate || dash} ~ ${gsc.range?.endDate || dash}`;
+  ga4Range.textContent = `${ga4.propertyId ? t("ga4.property", { id: ga4.propertyId }) : dash} · ${ga4.range?.startDate || dash} ~ ${ga4.range?.endDate || dash}`;
 
   const delta = gsc.delta;
   gscSummary.innerHTML = [
-    ["自然点击", compactNum(gscTotals.clicks)],
-    ["曝光量", compactNum(gscTotals.impressions)],
-    ["CTR", percent(gscTotals.ctr)],
-    ["平均排名", Number(gscTotals.position || 0).toFixed(1)],
-    ["有数据词数", compactNum(gscTotals.queryCount || (gsc.queries || []).length)],
+    [t("gsc.clicks"), compactNum(gscTotals.clicks)],
+    [t("gsc.impressions"), compactNum(gscTotals.impressions)],
+    [t("gsc.ctr"), percent(gscTotals.ctr)],
+    [t("gsc.position"), Number(gscTotals.position || 0).toFixed(1)],
+    [t("gsc.queryCount"), compactNum(gscTotals.queryCount || (gsc.queries || []).length)],
     [
-      "点击环比",
+      t("gsc.delta"),
       delta
-        ? `${delta.clicks >= 0 ? "+" : ""}${(delta.clicks * 100).toFixed(1)}%（后 ${delta.halfDays} 天 vs 前 ${delta.halfDays} 天）`
-        : "样本不足"
+        ? t("gsc.deltaValue", {
+            v: `${delta.clicks >= 0 ? "+" : ""}${(delta.clicks * 100).toFixed(1)}`,
+            n: delta.halfDays
+          })
+        : t("gsc.deltaNa")
     ]
   ]
     .map(([label, value]) => `<div class="summary-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`)
     .join("");
 
   ga4Summary.innerHTML = [
-    ["活跃用户", compactNum(ga4Totals.activeUsers)],
-    ["会话数", compactNum(ga4Totals.sessions)],
-    ["页面浏览", compactNum(ga4Totals.screenPageViews)],
-    ["互动率", percent(ga4Totals.engagementRate)],
-    ["平均时长", `${Math.round(ga4Totals.averageSessionDuration || 0)}s`],
-    ["转化数 / 转化率", `${compactNum(ga4Totals.conversions)} / ${percent(data.summary?.cvr)}`]
+    [t("ga4.users"), compactNum(ga4Totals.activeUsers)],
+    [t("ga4.sessions"), compactNum(ga4Totals.sessions)],
+    [t("ga4.views"), compactNum(ga4Totals.screenPageViews)],
+    [t("ga4.engagement"), percent(ga4Totals.engagementRate)],
+    [t("ga4.duration"), t("ga4.durationValue", { n: Math.round(ga4Totals.averageSessionDuration || 0) })],
+    [t("ga4.conversions"), `${compactNum(ga4Totals.conversions)} / ${percent(data.summary?.cvr)}`]
   ]
     .map(([label, value]) => `<div class="summary-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`)
     .join("");
@@ -607,9 +669,13 @@ function renderSite() {
   gscQueries.innerHTML = renderBars(
     (gsc.queries || []).slice(0, 8).map(item => ({
       label: item.query,
-      value: `${compactNum(item.impressions)} 曝光 · ${compactNum(item.clicks)} 点击 · CTR ${percent(item.ctr)}`,
+      value: t("gsc.queryValue", {
+        i: compactNum(item.impressions),
+        c: compactNum(item.clicks),
+        ctr: percent(item.ctr)
+      }),
       ratio: item.impressions,
-      badge: `第 ${Number(item.position || 0).toFixed(1)} 位`
+      badge: t("gsc.rank", { p: Number(item.position || 0).toFixed(1) })
     }))
   );
 
@@ -617,7 +683,7 @@ function renderSite() {
   ga4Channels.innerHTML = renderBars(
     (ga4.channels || []).slice(0, 6).map(item => ({
       label: item.sessionDefaultChannelGroup,
-      value: `${compactNum(item.sessions)} 会话 · 互动率 ${percent(item.engagementRate)}`,
+      value: t("ga4.channelValue", { s: compactNum(item.sessions), e: percent(item.engagementRate) }),
       ratio: (item.sessions || 0) / totalSessions,
       badge: `${((item.sessions || 0) / totalSessions * 100).toFixed(1)}%`
     }))
@@ -626,19 +692,19 @@ function renderSite() {
   gscOpportunities.innerHTML = renderBars(
     (gsc.opportunities || []).slice(0, 8).map(item => ({
       label: item.query,
-      value: item.reasons.join("；"),
+      value: item.reasons.join(ATR_LANG === "zh" ? "；" : "; "),
       ratio: item.impressions,
       badge: `CTR ${percent(item.ctr)}`
     })),
-    "当前窗口没有明显的机会词（曝光 ≥ 50 且 CTR 低于同排名正常值）。"
+    t("site.opportunitiesEmpty")
   );
 
   ga4Pages.innerHTML = renderBars(
     (ga4.pages || []).slice(0, 8).map(item => ({
       label: item.pagePath,
-      value: `${compactNum(item.screenPageViews)} 浏览 · ${compactNum(item.activeUsers)} 用户`,
+      value: t("ga4.pageValue", { v: compactNum(item.screenPageViews), u: compactNum(item.activeUsers) }),
       ratio: item.screenPageViews,
-      badge: `互动率 ${percent(item.engagementRate)}`,
+      badge: t("ga4.engage", { e: percent(item.engagementRate) }),
       weak: Number(item.engagementRate || 0) < 0.4
     }))
   );
@@ -655,8 +721,8 @@ function renderSite() {
             <span class="priority-pill">${escapeHtml(insight.priority)}</span>
             <strong>${escapeHtml(insight.title)}</strong>
           </div>
-          <p class="insight-evidence">证据：${escapeHtml(insight.evidence)}</p>
-          <p class="insight-action">动作：${escapeHtml(insight.action)}</p>
+          <p class="insight-evidence">${escapeHtml(t("site.evidence", { text: insight.evidence }))}</p>
+          <p class="insight-action">${escapeHtml(t("site.action", { text: insight.action }))}</p>
           ${
             insight.items && insight.items.length
               ? `<div class="chip-list">${insight.items
@@ -675,21 +741,22 @@ function renderSite() {
       : "");
 
   if (!insights.length) {
-    siteInsights.innerHTML = '<div class="empty-state">当前数据窗口没有触发洞察阈值。</div>';
+    siteInsights.innerHTML = `<div class="empty-state">${escapeHtml(t("site.insightsEmpty"))}</div>`;
   }
 
   const demo = data.sourceMode !== "live";
   siteNote.textContent = demo
-    ? "当前含演示数据。配置 GOOGLE_SERVICE_ACCOUNT_* + GSC_SITE_URL / GA4_PROPERTY_ID 后自动切 live。"
-    : `已取到 live 数据：GSC ${gscQueries_count(gsc)} 个词，GA4 ${(ga4.channels || []).length} 个渠道。`;
+    ? t("site.demoNote")
+    : t("site.liveNote", { q: gscQueries_count(gsc), c: (ga4.channels || []).length });
 }
 
 function gscQueries_count(gsc) {
   return (gsc.queries || []).length;
 }
 
-function renderBars(items, emptyText = "暂无数据。") {
-  if (!items.length) return `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+function renderBars(items, emptyText) {
+  const empty = emptyText || t("common.empty");
+  if (!items.length) return `<div class="empty-state">${escapeHtml(empty)}</div>`;
   const max = Math.max(...items.map(item => Number(item.ratio || 0)), 0) || 1;
   return items
     .map(
@@ -725,7 +792,7 @@ function renderAds() {
   adsGrid.innerHTML = "";
 
   if (!filtered.length) {
-    adsGrid.innerHTML = '<div class="empty-state">当前筛选没有广告素材。</div>';
+    adsGrid.innerHTML = `<div class="empty-state">${escapeHtml(t("ad.empty"))}</div>`;
     return;
   }
 
@@ -739,13 +806,13 @@ function renderAds() {
       image.onerror = () => {
         image.remove();
         creative.classList.add("no-image");
-        creative.dataset.placeholder = ad.headline || "无图片素材";
+        creative.dataset.placeholder = ad.headline || t("ad.noImage");
       };
     } else {
       // 该广告没有图片素材，不再套用示例图，改用文字占位
       image.remove();
       creative.classList.add("no-image");
-      creative.dataset.placeholder = ad.headline || "无图片素材";
+      creative.dataset.placeholder = ad.headline || t("ad.noImage");
     }
     node.querySelector(".platform-pill").textContent = ad.platform;
     node.querySelector(".advertiser").textContent = `${ad.advertiser} · ${ad.market} · ${ad.format}`;
@@ -760,7 +827,7 @@ function renderAds() {
       const briefButton = document.createElement("button");
       briefButton.type = "button";
       briefButton.className = "source-link brief-button";
-      briefButton.textContent = "生成 Brief";
+      briefButton.textContent = t("ad.brief");
       briefButton.addEventListener("click", () => runBrief(ad, briefButton));
       node.querySelector(".ad-actions").append(briefButton);
     }
@@ -781,7 +848,7 @@ function renderAds() {
 async function runBrief(ad, button) {
   const original = button.textContent;
   button.disabled = true;
-  button.textContent = "Brief 生成中…";
+  button.textContent = t("ad.briefRunning");
   try {
     const response = await requestWithAuth(
       ad.platform === "tiktok" ? "/api/tiktok/brief" : "/api/youtube/brief",
@@ -803,14 +870,12 @@ async function runBrief(ad, button) {
       button.closest(".ad-body").append(output);
     }
     output.textContent = data.brief;
-    button.textContent = data.engine === "deepseek" ? "已生成（AI）" : "已生成（模板）";
+    button.textContent = data.engine === "deepseek" ? t("ad.briefAi") : t("ad.briefTemplate");
   } catch (error) {
-    button.textContent = "生成失败，点击重试";
+    button.textContent = t("ad.briefFailed");
+    setTimeout(() => { button.textContent = t("ad.brief"); }, 2500);
   } finally {
     button.disabled = false;
-    if (button.textContent.startsWith("生成失败")) {
-      setTimeout(() => { button.textContent = original; }, 2500);
-    }
   }
 }
 
@@ -864,7 +929,9 @@ function renderSources(status) {
           </div>
           <p class="item-copy">${escapeHtml(source.route)} · ${escapeHtml(source.mode)} · ${escapeHtml(source.access)}</p>
           <p class="item-copy">${escapeHtml(renderMissingConfig(source))}</p>
-          <a href="${source.sourceUrl}" target="_blank" rel="noreferrer">${source.platform === "gsc" || source.platform === "ga4" ? "打开控制台" : "打开透明度中心"}</a>
+          <a href="${source.sourceUrl}" target="_blank" rel="noreferrer">${escapeHtml(
+            source.platform === "gsc" || source.platform === "ga4" ? t("sources.openConsole") : t("sources.openTransparency")
+          )}</a>
         </article>
       `
     )
@@ -873,9 +940,9 @@ function renderSources(status) {
 
 function renderMissingConfig(source) {
   if (!source.missing || source.missing.length === 0) {
-    return source.directKey ? `${source.directKey} ready` : `${source.envKey} ready`;
+    return t("sources.ready", { key: source.directKey || source.envKey });
   }
-  return `需要配置：${source.missing.join(" 或 ")}`;
+  return t("sources.missing", { list: source.missing.join(ATR_LANG === "zh" ? " 或 " : " or ") });
 }
 
 function renderIteration() {
@@ -883,7 +950,7 @@ function renderIteration() {
   if (!iteration) return;
 
   document.querySelector("#metricBacklog").textContent = iteration.backlog.length;
-  document.querySelector("#metricRules").textContent = `${iteration.effectiveRequirements.requiredElements.length} 条继承规则`;
+  document.querySelector("#metricRules").textContent = t("metric.rules", { n: iteration.effectiveRequirements.requiredElements.length });
 
   renderRequirements(iteration.effectiveRequirements, iteration.inheritanceChain);
   renderSignals(iteration.signals);
@@ -893,11 +960,11 @@ function renderIteration() {
 
 function renderRequirements(requirements, chain) {
   const groups = [
-    ["继承链路", chain.map(item => `${item.label} ${item.rules} 条`)],
-    ["必备元素", requirements.requiredElements],
-    ["禁用表述", requirements.bannedClaims],
-    ["视觉规则", requirements.visualRules],
-    ["优惠规则", requirements.offerRules]
+    [t("iter.chain"), chain.map(item => `${item.label} ${t("iter.ruleCount", { n: item.rules })}`)],
+    [t("iter.required"), requirements.requiredElements],
+    [t("iter.banned"), requirements.bannedClaims],
+    [t("iter.visual"), requirements.visualRules],
+    [t("iter.offer"), requirements.offerRules]
   ];
 
   requirementList.innerHTML = groups
@@ -937,15 +1004,15 @@ function renderIterationSummary(iteration) {
   const summary = iteration.importedSummary;
   const benchmarks = iteration.benchmarks;
   const rows = [
-    ["数据模式", iteration.sourceMode === "imported" ? "CSV imported" : "Demo data"],
-    ["素材行数", summary.rows],
-    ["总花费", money(summary.spend)],
-    ["总转化", summary.conversions],
-    ["整体 ROAS", summary.roas],
-    ["最佳素材", summary.bestCreativeId],
-    ["平均 CTR", percent(benchmarks.ctr)],
-    ["平均 CVR", percent(benchmarks.cvr)],
-    ["平均 CPA", money(benchmarks.cpa)]
+    [t("sum.mode"), iteration.sourceMode === "imported" ? t("sum.modeImported") : t("sum.modeDemo")],
+    [t("sum.rows"), summary.rows],
+    [t("sum.spend"), money(summary.spend)],
+    [t("sum.conversions"), summary.conversions],
+    [t("sum.roas"), summary.roas],
+    [t("sum.best"), summary.bestCreativeId],
+    [t("sum.ctr"), percent(benchmarks.ctr)],
+    [t("sum.cvr"), percent(benchmarks.cvr)],
+    [t("sum.cpa"), money(benchmarks.cpa)]
   ];
 
   iterationSummary.innerHTML = rows
@@ -976,16 +1043,16 @@ function renderBacklog(backlog) {
           <p class="brief-hypothesis">${escapeHtml(brief.hypothesis)}</p>
           <div class="brief-columns">
             <div>
-              <span class="column-label">执行动作</span>
+              <span class="column-label">${escapeHtml(t("brief.actions"))}</span>
               <ul>${brief.actions.map(action => `<li>${escapeHtml(action)}</li>`).join("")}</ul>
             </div>
             <div>
-              <span class="column-label">继承检查</span>
+              <span class="column-label">${escapeHtml(t("brief.checklist"))}</span>
               <ul>${brief.inheritedChecklist.slice(0, 6).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
             </div>
           </div>
           <details>
-            <summary>生成提示词</summary>
+            <summary>${escapeHtml(t("brief.prompt"))}</summary>
             <pre>${escapeHtml(brief.prompt)}</pre>
           </details>
           <div class="brief-foot">
@@ -1001,8 +1068,14 @@ function renderBacklog(backlog) {
 function buildHierarchyInput() {
   const globalRules = splitLines(document.querySelector("#globalRules").value);
   const channelRules = splitLines(document.querySelector("#channelRules").value);
-  const globalBannedRules = globalRules.filter(rule => /避免|禁用|不得|禁止|绝对/.test(rule));
-  const globalOfferRules = globalRules.filter(rule => /优惠|价格|落地页|权益|门槛/.test(rule));
+  const isZh = ATR_LANG === "zh";
+  const bannedPattern = isZh ? /避免|禁用|不得|禁止|绝对/ : /avoid|banned|never|do not|don't|prohibit/i;
+  const offerPattern = isZh ? /优惠|价格|落地页|权益|门槛/ : /offer|price|discount|landing page|benefit/i;
+  const localPattern = isZh ? /本地|货币/ : /local|currency/i;
+  const controlPattern = isZh ? /对照组/ : /control/i;
+
+  const globalBannedRules = globalRules.filter(rule => bannedPattern.test(rule));
+  const globalOfferRules = globalRules.filter(rule => offerPattern.test(rule));
   const globalRequiredRules = globalRules.filter(
     rule => !globalBannedRules.includes(rule) && !globalOfferRules.includes(rule)
   );
@@ -1012,16 +1085,16 @@ function buildHierarchyInput() {
       requiredElements: globalRequiredRules,
       bannedClaims: globalBannedRules,
       offerRules: globalOfferRules,
-      objective: "提升海外广告素材迭代效率"
+      objective: isZh ? "提升海外广告素材迭代效率" : "Improve overseas ad creative iteration efficiency"
     },
     market: {
-      requiredElements: channelRules.filter(rule => rule.includes("本地") || rule.includes("货币"))
+      requiredElements: channelRules.filter(rule => localPattern.test(rule))
     },
     channel: {
-      visualRules: channelRules.filter(rule => !rule.includes("本地") && !rule.includes("对照组"))
+      visualRules: channelRules.filter(rule => !localPattern.test(rule) && !controlPattern.test(rule))
     },
     campaign: {
-      offerRules: channelRules.filter(rule => rule.includes("对照组") || rule.includes("优惠"))
+      offerRules: channelRules.filter(rule => controlPattern.test(rule) || offerPattern.test(rule))
     }
   };
 }
@@ -1035,12 +1108,12 @@ function splitLines(value) {
 
 function setLoading(isLoading) {
   runButton.disabled = isLoading;
-  runButton.querySelector("span:last-child").textContent = isLoading ? "拉取中" : "自动拉取";
+  runButton.querySelector("span:last-child").textContent = isLoading ? t("query.running") : t("query.run");
 }
 
 function setIterationLoading(isLoading) {
   iterationButton.disabled = isLoading;
-  iterationButton.querySelector("span:last-child").textContent = isLoading ? "生成中" : "生成迭代";
+  iterationButton.querySelector("span:last-child").textContent = isLoading ? t("iter.running") : t("iter.run");
 }
 
 function setStatus(title, detail) {

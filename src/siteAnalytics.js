@@ -3,6 +3,7 @@
 // 拿不到真实数据时回退演示数据并明确标注，不把 demo 伪装成 live。
 const { fetchGscData, getGscStatus, createGscDemo } = require("./connectors/gscConnector");
 const { fetchGa4Data, getGa4Status, createGa4Demo } = require("./connectors/ga4Connector");
+const { tr } = require("./i18n");
 
 const DEFAULT_SINCE_DAYS = 28;
 
@@ -53,7 +54,7 @@ async function loadSource(status, liveLoader, demoLoader) {
     // 否则用户会以为"配置成功了但没数据"，排查成本极高。
     const demo = demoLoader();
     demo.warnings = [
-      `已配置 ${status.label}，但 live 取数失败：${error.message}。当前显示演示数据。`
+      tr("site.loadSourceWarning", { label: status.label, msg: error.message })
     ];
     return demo;
   }
@@ -108,14 +109,29 @@ function pushCtrGapInsight(insights, gsc) {
     id: "gsc-ctr-gap",
     type: "ctr_gap",
     priority: lostClicks >= 200 ? "P0" : "P1",
-    title: "高曝光低点击：标题/描述没接住需求",
-    evidence: `${rows.length} 个词 CTR 低于同排名正常值，按行业 CTR 曲线估算每月少拿约 ${lostClicks} 次点击；代表词：${top
-      .map(item => `${item.query}（曝光 ${item.impressions} / CTR ${(item.ctr * 100).toFixed(1)}% / 排名 ${item.position.toFixed(1)}）`)
-      .join("；")}`,
-    action: `改这 ${Math.min(rows.length, 5)} 个落地页的 title 与 meta description（把核心卖点前置到前 60 字符），同时把同一批词加进搜索广告 RSA 标题做 A/B。`,
+    title: tr("site.insight.ctrGap.title"),
+    evidence: tr("site.insight.ctrGap.evidence", {
+      n: rows.length,
+      lost: lostClicks,
+      list: top
+        .map(item =>
+          tr("site.insight.ctrGap.detail", {
+            q: item.query,
+            i: item.impressions,
+            c: (item.ctr * 100).toFixed(1),
+            p: item.position.toFixed(1)
+          })
+        )
+        .join(tr("site.insight.ctrGap.join"))
+    }),
+    action: tr("site.insight.ctrGap.action", { n: Math.min(rows.length, 5) }),
     items: top.map(item => ({
       label: item.query,
-      value: `${item.impressions} 曝光 · CTR ${(item.ctr * 100).toFixed(1)}% · 第 ${item.position.toFixed(1)} 位`
+      value: tr("site.insight.ctrGap.item", {
+        i: item.impressions,
+        c: (item.ctr * 100).toFixed(1),
+        p: item.position.toFixed(1)
+      })
     }))
   });
 }
@@ -133,15 +149,19 @@ function pushNearTopInsight(insights, gsc) {
     id: "gsc-near-top",
     type: "near_top",
     priority: "P1",
-    title: "临门一脚词：排名 4–15 位，冲前 3 收益最大",
-    evidence: `${rows.length} 个词卡在第 4–15 位，合计曝光 ${sorted.reduce((sum, item) => sum + item.impressions, 0)}；代表词：${sorted
-      .slice(0, 3)
-      .map(item => `${item.query}（第 ${item.position.toFixed(1)} 位）`)
-      .join("；")}`,
-    action: "挑 3 个词做内容补强（加 FAQ 段落 + 内链指向主转化页），同时在搜索广告里开精确匹配抢前 3 位置，测 14 天看自然位是否同步上移。",
+    title: tr("site.insight.nearTop.title"),
+    evidence: tr("site.insight.nearTop.evidence", {
+      n: rows.length,
+      imp: sorted.reduce((sum, item) => sum + item.impressions, 0),
+      list: sorted
+        .slice(0, 3)
+        .map(item => tr("site.insight.nearTop.detail", { q: item.query, p: item.position.toFixed(1) }))
+        .join(tr("site.insight.ctrGap.join"))
+    }),
+    action: tr("site.insight.nearTop.action"),
     items: sorted.map(item => ({
       label: item.query,
-      value: `第 ${item.position.toFixed(1)} 位 · ${item.impressions} 曝光`
+      value: tr("site.insight.nearTop.item", { p: item.position.toFixed(1), i: item.impressions })
     }))
   });
 }
@@ -157,12 +177,14 @@ function pushTrendInsight(insights, gsc) {
     id: "gsc-click-drop",
     type: "trend",
     priority: delta.clicks <= -0.3 ? "P0" : "P1",
-    title: "自然点击环比下滑",
-    evidence: `后 ${half} 天比前 ${half} 天点击下降 ${Math.abs(delta.clicks * 100).toFixed(1)}%，曝光变化 ${(delta.impressions * 100).toFixed(1)}%`,
+    title: tr("site.insight.trend.title"),
+    evidence: tr("site.insight.trend.evidence", {
+      h: half,
+      c: Math.abs(delta.clicks * 100).toFixed(1),
+      i: (delta.impressions * 100).toFixed(1)
+    }),
     action:
-      delta.impressions < -0.1
-        ? "先查索引与 robots：GSC → 网页索引报告，确认页面没被 noindex 或抓取失败；再看是不是核心词排名被竞品挤掉。"
-        : "曝光没掉但点击掉了，问题在 SERP 展现本身：检查竞品是否上了评分/FAQ 富摘要，并对比自己的 title 是否被打折重写。",
+      delta.impressions < -0.1 ? tr("site.insight.trend.actionIndex") : tr("site.insight.trend.actionSerp"),
     items: []
   });
 }
@@ -189,15 +211,21 @@ function pushChannelMixInsight(insights, ga4) {
     id: "ga4-channel-mix",
     type: "channel_mix",
     priority: paidShare >= 0.5 ? "P1" : "P2",
-    title: paidShare >= 0.5 ? "付费流量占比过半，自然承接偏弱" : "流量结构：判断还能不能加投放",
-    evidence: `付费（Paid Search/Display）占会话 ${(paidShare * 100).toFixed(1)}%，自然搜索占 ${(organicShare * 100).toFixed(1)}%，总会话 ${sessions}`,
-    action:
-      paidShare >= 0.5
-        ? "把付费跑出高转化的词反向补成内容页，目标是 30 天内自然占比提到 35% 以上；同时压低品牌词的付费出价，避免自己抢自己。"
-        : `自然搜索仍是主力（${(organicShare * 100).toFixed(1)}%），可在转化最好的 3 个页面上加投付费，放大已验证的承接路径。`,
+    title: paidShare >= 0.5 ? tr("site.insight.channel.titlePaid") : tr("site.insight.channel.titleMix"),
+    evidence: tr("site.insight.channel.evidence", {
+      p: (paidShare * 100).toFixed(1),
+      o: (organicShare * 100).toFixed(1),
+      s: sessions
+    }),
+    action: paidShare >= 0.5
+      ? tr("site.insight.channel.actionPaid")
+      : tr("site.insight.channel.actionOrganic", { o: (organicShare * 100).toFixed(1) }),
     items: channels.slice(0, 5).map(item => ({
       label: item.sessionDefaultChannelGroup,
-      value: `${item.sessions} 会话 · 互动率 ${(item.engagementRate * 100).toFixed(1)}%`
+      value: tr("site.insight.channel.item", {
+        s: item.sessions,
+        e: (item.engagementRate * 100).toFixed(1)
+      })
     }))
   });
 }
@@ -216,15 +244,27 @@ function pushLandingPageInsight(insights, ga4) {
     id: "ga4-weak-landing",
     type: "landing_page",
     priority: weak.length >= 3 ? "P0" : "P1",
-    title: "高流量低互动页面：预算在这里漏",
-    evidence: `${weak.length} 个页面浏览量 ≥ 200 但互动率低于 40%；最差：${sorted
-      .slice(0, 3)
-      .map(item => `${item.pagePath}（${item.screenPageViews} 浏览 / 互动率 ${(item.engagementRate * 100).toFixed(1)}%）`)
-      .join("；")}`,
-    action: "按「首屏 3 秒说清卖点 + 社会证明前置 + 表单/CTA 上移」三件事重做首屏，改完进「素材迭代」模块做一轮 A/B，两周后用同一批广告流量复测。",
+    title: tr("site.insight.landing.title"),
+    evidence: tr("site.insight.landing.evidence", {
+      n: weak.length,
+      list: sorted
+        .slice(0, 3)
+        .map(item =>
+          tr("site.insight.landing.detail", {
+            path: item.pagePath,
+            v: item.screenPageViews,
+            e: (item.engagementRate * 100).toFixed(1)
+          })
+        )
+        .join(tr("site.insight.ctrGap.join"))
+    }),
+    action: tr("site.insight.landing.action"),
     items: sorted.map(item => ({
       label: item.pagePath,
-      value: `${item.screenPageViews} 浏览 · 互动率 ${(item.engagementRate * 100).toFixed(1)}%`
+      value: tr("site.insight.landing.item", {
+        v: item.screenPageViews,
+        e: (item.engagementRate * 100).toFixed(1)
+      })
     }))
   });
 }
@@ -242,9 +282,14 @@ function pushConversionInsight(insights, ga4) {
     id: "ga4-low-cvr",
     type: "conversion",
     priority: "P0",
-    title: "有流量没转化：转化路径断层",
-    evidence: `${sessions} 会话只产生 ${conversions} 个转化（CVR ${(cvr * 100).toFixed(2)}%），互动率 ${((ga4.totals?.engagementRate || 0) * 100).toFixed(1)}%`,
-    action: "先在 GA4 里核对关键事件是否正确打点（转化事件是否被标为 key event），再按渠道拆 CVR 定位是流量质量问题还是结账流程问题；在定位清楚前不要加预算。",
+    title: tr("site.insight.cvr.title"),
+    evidence: tr("site.insight.cvr.evidence", {
+      s: sessions,
+      c: conversions,
+      r: (cvr * 100).toFixed(2),
+      e: ((ga4.totals?.engagementRate || 0) * 100).toFixed(1)
+    }),
+    action: tr("site.insight.cvr.action"),
     items: []
   });
 }

@@ -235,6 +235,19 @@ GSC_VERIFICATION_CODE=从 GSC「HTML 标记」复制的 content 值
 `<meta name="google-site-verification">`，密钥不进仓库。没配则页面原样输出。
 `robots.txt` 与 `sitemap.xml` 已在 `public/` 下，直接在 GSC 提交 sitemap 即可。
 
+## Language / 语言
+
+站点默认英文，右上角（侧边栏底部）有 EN / 中文 切换按钮，选择会写入 localStorage。
+
+- 强制指定：`?lang=en` 或 `?lang=zh`（例如 `https://adradarhub.com/?lang=zh`）
+- 改默认语言：`public/i18n.js` 里的 `ATR_DEFAULT_LANG = "en"` 改成 `"zh"`
+- 覆盖范围分两层：
+  - **前端**：`public/i18n.js` 的字典驱动，静态文案用 `data-i18n`，动态文案用 `t("key")`；
+  - **后端**：`src/i18n.js` 的字典驱动，请求带 `lang` 参数即可，洞察 / Brief / 报错提示全按语言生成
+    （`/api/intel`、`/api/iteration`、`/api/site-analytics`、`/api/source-status` 都支持）。
+- 切换语言时会自动重跑「素材迭代」与「站点数据」（走不计配额的 GET 拉取），
+  `/api/intel` 不重跑，避免每天 10 次配额被语言切换消耗。
+
 ## Official sources
 
 - Meta Ad Library: https://www.facebook.com/ads/library/

@@ -1,3 +1,5 @@
+const { tr } = require("./i18n");
+
 const sourceUrls = {
   meta: "https://www.facebook.com/ads/library/",
   google: "https://adstransparency.google.com/",
@@ -22,12 +24,15 @@ const techImages = [
   "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=900&q=80"
 ];
 
-const trendRecommendations = [
-  "放到广告首屏标题，配合倒计时折扣。",
-  "拆成独立搜索词组和 Shopping 标题词。",
-  "用于 Meta 短视频前 3 秒字幕。",
-  "加入落地页首屏信任模块。"
-];
+function getTrendRecommendations() {
+  return [tr("mock.trend.rec0"), tr("mock.trend.rec1"), tr("mock.trend.rec2"), tr("mock.trend.rec3")];
+}
+
+// 趋势名按语言映射：常量里统一写英文，中文模式下翻译回来。
+function localizeTrendName(name) {
+  if (name === "AI one-click website") return tr("mock.trend.readdyAi");
+  return name;
+}
 
 const competitorSignals = ["High promo velocity", "New video creatives", "Search conquesting", "Shopping feed expansion"];
 
@@ -45,7 +50,7 @@ const brandProfiles = {
       ["10Web", "10web.io"]
     ],
     trends: [
-      ["AI 一键生成官网", 97, "+38%", "Product demand"],
+      ["AI one-click website", 97, "+38%", "Product demand"],
       ["No-code landing page", 92, "+31%", "Category"],
       ["Custom domain included", 88, "+26%", "Offer"],
       ["Mobile-first template", 84, "+21%", "Feature"],
@@ -157,15 +162,16 @@ function createCompetitors(profile) {
 }
 
 function createTrends(profile, sinceDays) {
-  return profile.trends.map(([name, score, growth, type], index) => ({
+  const recommendations = getTrendRecommendations();
+  return profile.trends.map(([rawName, score, growth, type], index) => ({
     id: `trend-${index + 1}`,
-    name,
+    name: localizeTrendName(rawName),
     score,
     growth,
     type,
     category: profile.categories[index % profile.categories.length],
     window: `${sinceDays}d`,
-    recommendation: trendRecommendations[index % trendRecommendations.length]
+    recommendation: recommendations[index % recommendations.length]
   }));
 }
 

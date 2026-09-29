@@ -1,3 +1,4 @@
+const { tr } = require("./i18n");
 const { fetchPlatformIntel, getConnectorStatus } = require("./connectors/transparency");
 const { fetchYouTubeIntel, getYoutubeStatus } = require("./connectors/youtubeConnector");
 const { fetchTikTokIntel, getTikTokStatus } = require("./connectors/tiktokConnector");
@@ -100,8 +101,8 @@ async function createIntelReport(input) {
         platform: "system",
         message:
           usedLiveData
-            ? "部分平台已使用 live connector，未配置的平台仍使用演示数据。"
-            : "当前未配置平台授权或内部抓取代理，结果为演示数据；页面和接口流程已可运行。"
+            ? tr("intel.warning.mixed")
+            : tr("intel.warning.demo")
       }
     ]
   };
@@ -269,7 +270,7 @@ function inferTrendsFromAds(ads, sinceDays) {
       type: "Live creative phrase",
       category: "Transparency data",
       window: `${sinceDays}d`,
-      recommendation: "优先验证到广告标题、短视频字幕和落地页首屏。"
+      recommendation: tr("intel.trend.recommendation")
     }));
 }
 

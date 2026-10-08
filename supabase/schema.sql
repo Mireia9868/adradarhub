@@ -1,6 +1,6 @@
 -- Ad Trend Radar 账号体系：用户表 + 用量流水表
 -- 在 Supabase Dashboard → SQL Editor 里整段粘贴执行一次即可。
--- 后端只用 service_role key 访问（服务端），因此无需配置 RLS 策略。
+-- 后端只用 service_role key 访问；浏览器角色不允许读取账号、密码哈希或用量。
 
 create extension if not exists pgcrypto;
 
@@ -26,3 +26,10 @@ create index if not exists atr_usage_user_day_idx on atr_usage_events (user_id, 
 -- from atr_users u
 -- left join atr_usage_events e on e.user_id = u.id and e.day = (now() at time zone 'Asia/Shanghai')::date::text
 -- group by u.email order by today_used desc;
+
+-- 可重复执行，也会保护此前已经创建的表。service_role 在服务端绕过 RLS。
+alter table public.atr_users enable row level security;
+alter table public.atr_usage_events enable row level security;
+revoke all on public.atr_users, public.atr_usage_events from anon, authenticated;
+grant select, insert, update, delete on public.atr_users, public.atr_usage_events to service_role;
+grant usage, select on sequence public.atr_usage_events_id_seq to service_role;

@@ -25,7 +25,7 @@ const stub = http.createServer((req, res) => {
     const query = parseQuery(req.url);
 
     if (path === "/rest/v1/atr_users" && req.method === "GET") {
-      const found = db.users.filter(u => u.email === query["email"]);
+      const found = db.users.filter(u => query.id ? u.id === query.id : u.email === query["email"]);
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(JSON.stringify(found));
     }
@@ -34,7 +34,7 @@ const stub = http.createServer((req, res) => {
       const body = JSON.parse(raw || "{}");
       if (db.users.some(u => u.email === body.email)) {
         res.writeHead(409, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ message: "duplicate key" }));
+        return res.end(JSON.stringify({ code: "23505", message: "duplicate key" }));
       }
       const user = {
         id: crypto.randomUUID(),
@@ -119,6 +119,9 @@ async function main() {
 
   const payload = auth._internal.readToken(login.token);
   check("token 可解析且含用户 id", payload && payload.sub === created.user.id);
+  check("token 后附加片段被拒", auth._internal.readToken(login.token + ".extra") === null);
+  const invalidPassword = await auth.signIn({ email, password: { value: "bad" } }).catch(e => e);
+  check("非字符串密码被拒（400）", invalidPassword.statusCode === 400);
   check("伪造签名被拒", auth._internal.readToken(login.token.slice(0, -3) + "xxx") === null);
   check("过期 token 被拒", (() => {
     const cfg = { secret: "test-secret-do-not-use-in-prod" };
@@ -154,6 +157,12 @@ async function main() {
   const okNextDay = await auth.consume(uid, "intel").catch(e => e);
   check("换日后可继续拉取", okNextDay && okNextDay.remaining === 9);
   process.env.QUOTA_UTC_OFFSET = beforeOffset;
+
+  const req = { headers: { authorization: `Bearer ${login.token}` } };
+  check("有效会话查询实际账号", (await auth.resolveSession(req)).user.id === uid);
+  db.users.length = 0;
+  const deleted = await auth.resolveSession(req).catch(e => e);
+  check("删除的账号无法继续使用旧会话", deleted.statusCode === 401);
 
   stub.close();
 

@@ -75,14 +75,17 @@ function readToken(token) {
   const cfg = config();
   if (!cfg.enabled) return null;
   if (typeof token !== "string" || !token.includes(".")) return null;
-  const [body, sig] = token.split(".");
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
   const expected = crypto.createHmac("sha256", cfg.secret).update(body).digest("base64url");
   const given = Buffer.from(sig || "", "utf8");
   const want = Buffer.from(expected, "utf8");
   if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return null;
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+    if (!Number.isFinite(payload.exp) || payload.exp * 1000 <= Date.now()) return null;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.sub || "")) return null;
     return payload;
   } catch {
     return null;
@@ -96,21 +99,30 @@ function bearerToken(req) {
 
 // —— Supabase REST ——
 async function rest(cfg, pathname, options = {}) {
-  const response = await fetch(`${cfg.url}/rest/v1/${pathname}`, {
-    method: options.method || "GET",
-    headers: {
-      apikey: cfg.key,
-      authorization: `Bearer ${cfg.key}`,
-      "content-type": "application/json",
-      accept: "application/json",
-      ...(options.prefer ? { prefer: options.prefer } : {}),
-      ...(options.headers || {})
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
+  let response;
+  try {
+    response = await fetch(`${cfg.url}/rest/v1/${pathname}`, {
+      signal: AbortSignal.timeout(15000),
+      method: options.method || "GET",
+      headers: {
+        apikey: cfg.key,
+        authorization: `Bearer ${cfg.key}`,
+        "content-type": "application/json",
+        accept: "application/json",
+        ...(options.prefer ? { prefer: options.prefer } : {}),
+        ...(options.headers || {})
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+  } catch {
+    throw httpError(502, "无法连接账号数据库，请稍后重试或联系管理员检查 Supabase 配置。");
+  }
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw httpError(502, `supabase_request_failed:${response.status}:${text.slice(0, 160)}`);
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 409 && detail.code === "23505") {
+      throw httpError(409, "该邮箱已注册，请直接登录。");
+    }
+    throw httpError(502, "账号数据库请求失败，请联系管理员检查 Supabase 密钥、数据表和访问权限。");
   }
   return response;
 }
@@ -153,8 +165,9 @@ async function signIn({ email, password }) {
   const cfg = config();
   if (!cfg.enabled) throw httpError(503, "账号系统未配置：缺少 " + missingKeys(cfg).join(", "));
   const normalizedEmail = String(email || "").trim().toLowerCase();
-  if (!normalizedEmail || !password) throw httpError(400, "请填写邮箱和密码。");
+  if (!normalizedEmail || typeof password !== "string" || !password) throw httpError(400, "请填写邮箱和密码。");
 
+  if (Buffer.byteLength(password, "utf8") > 1024) throw httpError(400, "密码过长。");
   const user = await findUserByEmail(cfg, normalizedEmail);
   // 邮箱不存在与密码错误返回同一提示，避免账号枚举
   if (!user || !verifyPassword(password, user.password_hash)) {
@@ -173,6 +186,7 @@ function validateCredentials(email, password) {
   if (typeof password !== "string" || password.length < 8) {
     throw httpError(400, "密码至少 8 位。");
   }
+  if (Buffer.byteLength(password, "utf8") > 1024) throw httpError(400, "密码过长，请使用不超过 1024 字节的密码。");
 }
 
 // —— 配额：usage_events 追加写 + count 读取，天然避免并发改同一行 ——
@@ -225,8 +239,11 @@ async function resolveSession(req) {
   if (!cfg.enabled) return null;
   const payload = readToken(bearerToken(req));
   if (!payload) throw httpError(401, "请先登录后再拉取数据。");
-  const usage = await readUsage(cfg, payload.sub);
-  return { user: { id: payload.sub, email: payload.email }, usage };
+  const response = await rest(cfg, `atr_users?id=eq.${payload.sub}&select=id,email,created_at&limit=1`);
+  const [user] = await response.json();
+  if (!user) throw httpError(401, "账号已失效，请重新登录。");
+  const usage = await readUsage(cfg, user.id);
+  return { user: publicUser(user), usage };
 }
 
 // 需要配额的接口统一走这里：先校验会话，再扣一次额度

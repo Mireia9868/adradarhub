@@ -17,13 +17,13 @@ const stub = http.createServer((req, res) => {
 
     if (path === "/rest/v1/atr_users" && req.method === "GET") {
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(JSON.stringify(db.users.filter(u => u.email === query.email)));
+      return res.end(JSON.stringify(db.users.filter(u => query.id ? u.id === query.id : u.email === query.email)));
     }
     if (path === "/rest/v1/atr_users" && req.method === "POST") {
       const body = JSON.parse(raw || "{}");
       if (db.users.some(u => u.email === body.email)) {
         res.writeHead(409, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ message: "duplicate" }));
+        return res.end(JSON.stringify({ code: "23505", message: "duplicate" }));
       }
       const user = { id: crypto.randomUUID(), email: body.email, password_hash: body.password_hash, created_at: new Date().toISOString() };
       db.users.push(user);

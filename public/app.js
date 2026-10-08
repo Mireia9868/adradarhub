@@ -187,6 +187,8 @@ function closeAuthModal() {
 
 function setAuthMode(mode) {
   authMode = mode;
+  authPassword.autocomplete = mode === "signup" ? "new-password" : "current-password";
+  authPassword.minLength = mode === "signup" ? 8 : 1;
   tabLogin.classList.toggle("active", mode === "login");
   tabSignup.classList.toggle("active", mode === "signup");
   authTitle.textContent = mode === "login" ? t("auth.titleLogin") : t("auth.titleSignup");
@@ -280,6 +282,8 @@ async function submitAuth(event) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || data.message || t("auth.loginFailed"));
+    if (!data.token || !data.user) throw new Error(t("auth.loginFailed"));
+    authPassword.value = "";
     localStorage.setItem(TOKEN_KEY, data.token);
     auth.token = data.token;
     auth.user = data.user;

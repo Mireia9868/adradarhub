@@ -64,6 +64,7 @@ function signToken(user, cfg) {
   const payload = {
     sub: user.id,
     email: user.email,
+    pwd: crypto.createHash("sha256").update(user.password_hash).digest("hex"),
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 30 * 86400 // 30 天
   };
@@ -83,7 +84,7 @@ function readToken(token) {
   if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return null;
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+    if (payload.purpose || !payload.exp || payload.exp * 1000 < Date.now()) return null;
     return payload;
   } catch {
     return null;
@@ -226,6 +227,9 @@ async function resolveSession(req) {
   if (!cfg.enabled) return null;
   const payload = readToken(bearerToken(req));
   if (!payload) throw httpError(401, tr("auth.loginRequired"));
+  const user = await findUserByEmail(cfg, payload.email);
+  const fingerprint = user && crypto.createHash("sha256").update(user.password_hash).digest("hex");
+  if (!user || user.id !== payload.sub || payload.pwd !== fingerprint) throw httpError(401, tr("auth.loginRequired"));
   const usage = await readUsage(cfg, payload.sub);
   return { user: { id: payload.sub, email: payload.email }, usage };
 }
@@ -258,5 +262,5 @@ module.exports = {
   consume,
   quotaHeaders,
   // 仅用于离线自测
-  _internal: { hashPassword, verifyPassword, signToken, readToken, currentDay, config }
+  _internal: { hashPassword, verifyPassword, signToken, readToken, currentDay, config, rest, findUserByEmail, validateCredentials }
 };

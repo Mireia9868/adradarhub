@@ -149,6 +149,11 @@ const tabLogin = document.querySelector("#tabLogin");
 const tabSignup = document.querySelector("#tabSignup");
 
 let authMode = "login";
+let resetToken = location.hash.startsWith("#reset-password=") ? location.hash.slice(16) : "";
+if (resetToken) history.replaceState(null, "", location.pathname + location.search);
+const authForgot = document.querySelector("#authForgot");
+const authNotice = document.querySelector("#authNotice");
+authForgot.addEventListener("click", () => setAuthMode("forgot"));
 
 function renderAuth() {
   if (!auth.enabled) {
@@ -187,12 +192,23 @@ function closeAuthModal() {
 
 function setAuthMode(mode) {
   authMode = mode;
+  const recovery = mode === "forgot" || mode === "reset";
   tabLogin.classList.toggle("active", mode === "login");
   tabSignup.classList.toggle("active", mode === "signup");
-  authTitle.textContent = mode === "login" ? t("auth.titleLogin") : t("auth.titleSignup");
-  authSub.textContent = mode === "login" ? t("auth.subLogin") : t("auth.subSignup");
-  authSubmitLabel.textContent = mode === "login" ? t("auth.submitLogin") : t("auth.submitSignup");
+  const suffix = mode === "login" ? "Login" : mode === "signup" ? "Signup" : mode === "forgot" ? "Forgot" : "Reset";
+  authTitle.textContent = t("auth.title" + suffix);
+  authSub.textContent = t("auth.sub" + suffix);
+  authSubmitLabel.textContent = t("auth.submit" + suffix);
+  authEmail.closest("label").hidden = mode === "reset";
+  authEmail.required = mode !== "reset";
+  authPassword.closest("label").hidden = mode === "forgot";
+  authPassword.required = mode !== "forgot";
+  authPassword.autocomplete = mode === "login" ? "current-password" : "new-password";
+  authPassword.minLength = mode === "login" ? 0 : 8;
+  authPassword.maxLength = 256;
+  authForgot.hidden = mode !== "login";
   authError.hidden = true;
+  authNotice.hidden = true;
 }
 
 // 统一带 Authorization 的请求，并集中处理未登录 / 额度耗尽
@@ -252,6 +268,7 @@ async function initAuth() {
     auth.enabled = false;
   }
   renderAuth();
+  if (resetToken) { setAuthMode("reset"); openAuthModal(); return false; }
   if (!auth.enabled) return true;
 
   auth.token = localStorage.getItem(TOKEN_KEY) || "";
@@ -273,6 +290,23 @@ async function submitAuth(event) {
   authSubmit.disabled = true;
   authSubmitLabel.textContent = authMode === "login" ? t("auth.submitLoginLoading") : t("auth.submitSignupLoading");
   try {
+    if (authMode === "forgot" || authMode === "reset") {
+      const mode = authMode;
+      const response = await fetch(mode === "forgot" ? "/api/auth/forgot-password" : "/api/auth/reset-password", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: authEmail.value.trim(), token: resetToken, password: authPassword.value, lang: ATR_LANG })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || t("auth.loginFailed"));
+      authPassword.value = "";
+      if (mode === "reset") {
+        resetToken = ""; localStorage.removeItem(TOKEN_KEY);
+        auth.token = ""; auth.user = null; auth.usage = null;
+        renderAuth(); setAuthMode("login");
+      }
+      authNotice.textContent = data.message; authNotice.hidden = false;
+      return;
+    }
     const response = await fetch(authMode === "login" ? "/api/auth/login" : "/api/auth/signup", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -285,6 +319,7 @@ async function submitAuth(event) {
     auth.user = data.user;
     auth.usage = data.usage;
     renderAuth();
+    authPassword.value = "";
     closeAuthModal();
     runIntel();
   } catch (error) {
@@ -292,7 +327,8 @@ async function submitAuth(event) {
     authError.hidden = false;
   } finally {
     authSubmit.disabled = false;
-    authSubmitLabel.textContent = authMode === "login" ? t("auth.submitLogin") : t("auth.submitSignup");
+    const suffix = authMode === "login" ? "Login" : authMode === "signup" ? "Signup" : authMode === "forgot" ? "Forgot" : "Reset";
+    authSubmitLabel.textContent = t("auth.submit" + suffix);
   }
 }
 

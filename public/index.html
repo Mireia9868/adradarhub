@@ -4,7 +4,7 @@
     <meta charset="utf-8" data-page-node-id="XBmRnFbOvLCDs4PpPFSJVH" />
     <meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="ltLCpahRzWe3RWOR04OrpB" />
     <title>Ad Trend Radar</title>
-    <link rel="stylesheet" href="/styles.css?v=auth-hidden-2" data-page-node-id="72OP5iEoBivw0QjFKQQyde" />
+    <link rel="stylesheet" href="/styles.css?v=password-reset-1" data-page-node-id="72OP5iEoBivw0QjFKQQyde" />
     <style>[hidden] { display: none !important; }</style>
     <!--SITE_TAGS-->
   </head>
@@ -534,7 +534,9 @@ Google 标题覆盖高意图关键词
             <span data-i18n="auth.password">密码</span>
             <input id="authPassword" type="password" autocomplete="current-password" placeholder="至少 8 位" data-i18n-placeholder="auth.passwordHint" required />
           </label>
-          <p class="auth-error" id="authError" hidden></p>
+          <button class="auth-link" id="authForgot" type="button" data-i18n="auth.forgot">Forgot password?</button>
+          <p id="authNotice" role="status" hidden></p>
+          <p class="auth-error" id="authError" role="alert" hidden></p>
           <button class="run-button auth-submit" id="authSubmit" type="submit">
             <span aria-hidden="true">→</span>
             <span id="authSubmitLabel" data-i18n="auth.submitLogin">登录</span>
@@ -545,6 +547,6 @@ Google 标题覆盖高意图关键词
 
     <script src="/i18n.js"></script>
     <script src="/motion.js"></script>
-    <script src="/app.js?v=auth-hidden-2"></script>
+    <script src="/app.js?v=password-reset-1"></script>
   </body>
 </html>

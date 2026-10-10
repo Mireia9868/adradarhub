@@ -7,6 +7,13 @@
  */
 const ATR_DICT = {
   en: {
+    "auth.forgot": "Forgot password?",
+    "auth.titleForgot": "Forgot password",
+    "auth.subForgot": "Enter your account email to receive a reset link valid for 30 minutes.",
+    "auth.submitForgot": "Send reset link",
+    "auth.titleReset": "Choose a new password",
+    "auth.subReset": "Use at least 8 characters. After saving, log in with your new password.",
+    "auth.submitReset": "Save new password",
     "brand.tagline": "Overseas ads intelligence",
     "lang.en": "EN",
     "lang.zh": "中文",
@@ -253,6 +260,13 @@ const ATR_DICT = {
   },
 
   zh: {
+    "auth.forgot": "忘记密码？",
+    "auth.titleForgot": "找回密码",
+    "auth.subForgot": "输入注册邮箱，接收 30 分钟内有效的密码重置链接。",
+    "auth.submitForgot": "发送重置链接",
+    "auth.titleReset": "设置新密码",
+    "auth.subReset": "密码至少 8 位，保存后请使用新密码登录。",
+    "auth.submitReset": "保存新密码",
     "brand.tagline": "海外广告情报",
     "lang.en": "EN",
     "lang.zh": "中文",

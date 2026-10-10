@@ -255,3 +255,14 @@ GSC_VERIFICATION_CODE=从 GSC「HTML 标记」复制的 content 值
 - Google Ads Transparency Center: https://adstransparency.google.com/
 - Microsoft Advertising Ad Library: https://adlibrary.ads.microsoft.com/
 - Microsoft Ad Library API docs: https://learn.microsoft.com/en-us/advertising/ad-library-api/
+
+## Password recovery
+
+The existing `atr_users` account system now supports email recovery without schema changes.
+Configure Render environment variables `RESEND_API_KEY` and `AUTH_EMAIL_FROM` (a sender on a domain verified in Resend), plus `AUTH_SITE_URL=https://adradarhub.com`, then deploy. No credentials belong in GitHub.
+
+Login → Forgot password → enter registered email → follow the email link → choose a new password → log in. Links expire after 30 minutes, are single-use via an atomic password-hash conditional update, and are carried in the URL fragment rather than server logs. Password changes invalidate all prior sessions and other outstanding reset links. This release also requires existing users to log in once to obtain password-bound sessions.
+
+The endpoint returns the same message for unknown and registered emails. Delivery errors are logged without tokens or addresses; inspect Render logs and Resend delivery logs if mail does not arrive. Rate limiting is in-memory per instance (1 request/email/minute, 20/IP/hour); add a shared limiter before scaling to multiple instances. Behind Render's proxy, the IP limit uses the direct socket address conservatively.
+
+Run `npm run check:auth` and `node scripts/password-reset-check.js`. Production acceptance: verify `/api/auth/config` reports `recoveryEnabled: true`, receive a real reset email, reset once, reject reuse, and verify the old password/session fails. No live email has been sent by the offline tests.

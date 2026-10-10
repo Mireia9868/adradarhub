@@ -92,3 +92,10 @@ services:
         sync: false
       - key: GSC_VERIFICATION_CODE
         sync: false
+      # Password recovery email (Resend verified sender).
+      - key: RESEND_API_KEY
+        sync: false
+      - key: AUTH_EMAIL_FROM
+        sync: false
+      - key: AUTH_SITE_URL
+        value: https://adradarhub.com

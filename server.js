@@ -24,6 +24,8 @@ const {
   quotaHeaders
 } = require("./src/auth");
 
+const { forgotPassword, resetPassword, recoveryEnabled } = require("./src/passwordReset");
+
 loadEnv();
 
 const publicDir = path.join(__dirname, "public");
@@ -64,9 +66,22 @@ const server = http.createServer(async (req, res) => {
       const cfg = authConfig();
       return sendJson(res, 200, {
         enabled: cfg.enabled,
+        recoveryEnabled: recoveryEnabled(),
         quotaPerDay: cfg.quotaPerDay,
         missing: cfg.missing
       });
+    }
+
+    if (req.method === "POST" && ["/api/auth/forgot-password", "/api/auth/reset-password"].includes(url.pathname)) {
+      const body = await readJson(req);
+      try {
+        const result = url.pathname.endsWith("forgot-password")
+          ? await forgotPassword(body, req.socket.remoteAddress)
+          : await resetPassword(body);
+        return sendJson(res, 200, result, { "cache-control": "no-store" });
+      } catch (err) {
+        return sendJson(res, err.statusCode || 500, { error: err.message }, { "cache-control": "no-store" });
+      }
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {

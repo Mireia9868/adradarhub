@@ -2240,3 +2240,8 @@ button {
   color: #fff;
   box-shadow: var(--glow);
 }
+
+/* Preserve HTML hidden state when component styles set display explicitly. */
+[hidden] {
+  display: none !important;
+}

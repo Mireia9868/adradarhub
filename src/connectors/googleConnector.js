@@ -64,7 +64,7 @@ async function handleGoogleConnector(body = {}) {
     const ads = await fetchGoogleAds(query);
     return {
       platform: "google",
-      sourceMode: "live",
+      sourceMode: "demo",
       warnings: [
         "Google connector 运行在 SAMPLE 模式：返回的是样本数据，不是真实竞品广告。接入真实数据源后此提示会消失。"
       ],

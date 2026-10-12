@@ -73,9 +73,14 @@ async function fetchPlatformIntel(platform, query) {
   }
 
   const payload = await response.json();
+  // Proxy readiness is not proof of live data. Preserve explicit provider mode.
+  const isSample = (payload.ads || []).some(ad =>
+    /\[SAMPLE\]/i.test(ad.advertiser || "") || (ad.tags || []).includes("sample")
+  );
+  const sourceMode = isSample || ["demo", "sample", "error"].includes(payload.sourceMode) ? "demo" : "live";
   return {
     platform,
-    sourceMode: "live",
+    sourceMode,
     warnings: payload.warnings || [],
     ads: normalizeAds(platform, payload.ads || []),
     trends: payload.trends || [],

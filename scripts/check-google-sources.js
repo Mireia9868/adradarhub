@@ -1,0 +1,46 @@
+const assert = require('node:assert/strict');
+const envKeys = ['GOOGLE_SERVICE_ACCOUNT_JSON','GOOGLE_SERVICE_ACCOUNT_FILE','GOOGLE_SERVICE_ACCOUNT_EMAIL','GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY','GOOGLE_OAUTH_CLIENT_ID','GOOGLE_OAUTH_CLIENT_SECRET','GOOGLE_REFRESH_TOKEN','GSC_SITE_URL','GSC_DEFAULT_DOMAIN','GA4_PROPERTY_ID','GOOGLE_TRANSPARENCY_ENDPOINT'];
+const saved = Object.fromEntries(envKeys.map(k => [k,process.env[k]]));
+const clear = () => envKeys.forEach(k => delete process.env[k]);
+const originalFetch = global.fetch;
+(async () => {
+  clear();
+  const auth = require('../src/googleAuth');
+  assert.equal(auth.getGoogleAuthStatus().configured,false);
+  process.env.GOOGLE_OAUTH_CLIENT_ID='test-client';process.env.GOOGLE_REFRESH_TOKEN='test-refresh';
+  assert.deepEqual(auth.getGoogleAuthStatus().missing,['GOOGLE_OAUTH_CLIENT_SECRET']);
+  process.env.GOOGLE_OAUTH_CLIENT_SECRET='test-secret';
+  assert.equal(auth.getGoogleAuthStatus().mode,'refresh-token');
+  clear();process.env.GOOGLE_SERVICE_ACCOUNT_JSON='{invalid-secret-json';
+  const invalid=auth.getGoogleAuthStatus();assert.equal(invalid.configured,false);
+  assert(!JSON.stringify(invalid).includes('invalid-secret-json'));
+  clear();process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL='test@example.test';process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY='test-key';
+  // Fake only token/network I/O. Exercise the real status and report aggregation.
+  auth.getAccessToken=async()=> 'test-access-token';
+  const {getGscStatus}=require('../src/connectors/gscConnector');
+  const {getGa4Status}=require('../src/connectors/ga4Connector');
+  assert.equal(getGscStatus().configured,false);assert.equal(getGa4Status().configured,false);
+  assert.equal(getGscStatus({siteUrl:'sc-domain:adradarhub.com'}).configured,true);
+  assert.equal(getGa4Status({propertyId:'123456789'}).configured,true);
+  const calls=[];
+  global.fetch=async url=> {calls.push(String(url));return {ok:true,json:async()=>({rows:[]})}};
+  const {createSiteAnalyticsReport}=require('../src/siteAnalytics');
+  const report=await createSiteAnalyticsReport({website:'adradarhub.com',siteUrl:'sc-domain:adradarhub.com',propertyId:'123456789'});
+  assert.equal(report.gsc.sourceMode,'live');assert.equal(report.ga4.sourceMode,'live');
+  assert(calls.some(url=>url.includes('searchconsole.googleapis.com')));
+  assert(calls.some(url=>url.includes('analyticsdata.googleapis.com')));
+  const {handleGoogleConnector}=require('../src/connectors/googleConnector');
+  assert.equal((await handleGoogleConnector({domain:'adradarhub.com'})).sourceMode,'demo');
+  const {fetchPlatformIntel}=require('../src/connectors/transparency');
+  process.env.GOOGLE_TRANSPARENCY_ENDPOINT='https://connector.example.test';
+  const query={brand:'test',website:new URL('https://adradarhub.com'),markets:['US'],sinceDays:30};
+  global.fetch=async()=>({ok:true,json:async()=>({sourceMode:'demo',ads:[]})});
+  assert.equal((await fetchPlatformIntel('google',query)).sourceMode,'demo');
+  global.fetch=async()=>({ok:true,json:async()=>({sourceMode:'live',ads:[{advertiser:'[SAMPLE] Brand',tags:[]}]})});
+  assert.equal((await fetchPlatformIntel('google',query)).sourceMode,'demo');
+  global.fetch=async()=>({ok:true,json:async()=>({sourceMode:'live',ads:[]})});
+  assert.equal((await fetchPlatformIntel('google',query)).sourceMode,'live');
+  console.log('PASS Google credential diagnostics, per-query resources, real API dispatch, sample/demo modes and live proxy compatibility');
+})().catch(error=>{console.error(error);process.exitCode=1}).finally(()=>{
+  global.fetch=originalFetch;clear();Object.entries(saved).forEach(([k,v])=>{if(v!==undefined)process.env[k]=v});
+});

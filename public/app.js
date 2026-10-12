@@ -1067,7 +1067,7 @@ function renderSources(status) {
         <article class="source-item">
           <div class="item-top">
             <strong>${escapeHtml(source.label)}</strong>
-            <span class="score">${source.configured ? "Live" : "Demo"}</span>
+            <span class="score">${escapeHtml(t(source.configured ? "sources.configured" : "sources.unconfigured"))}</span>
           </div>
           <p class="item-copy">${escapeHtml(source.route)} · ${escapeHtml(source.mode)} · ${escapeHtml(source.access)}</p>
           <p class="item-copy">${escapeHtml(renderMissingConfig(source))}</p>
@@ -1084,7 +1084,7 @@ function renderMissingConfig(source) {
   if (!source.missing || source.missing.length === 0) {
     return t("sources.ready", { key: source.directKey || source.envKey });
   }
-  return t("sources.missing", { list: source.missing.join(ATR_LANG === "zh" ? " 或 " : " or ") });
+  return t("sources.missing", { list: source.missing.join((source.platform === "gsc" || source.platform === "ga4") ? (ATR_LANG === "zh" ? "；" : "; ") : (ATR_LANG === "zh" ? " 或 " : " or ")) });
 }
 
 function renderIteration() {

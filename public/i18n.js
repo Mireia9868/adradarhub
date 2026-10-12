@@ -7,6 +7,8 @@
  */
 const ATR_DICT = {
   en: {
+    "sources.configured": "Configured",
+    "sources.unconfigured": "Needs setup",
     "orbital.index": "SIGNAL INDEX",
     "orbital.pause": "Pause animation",
     "orbital.resume": "Resume animation",
@@ -261,7 +263,7 @@ const ATR_DICT = {
     "ga4.property": "property {id}",
 
     "sources.title": "Data source status",
-    "sources.desc": "Connectors switch from demo to live-ready once configured.",
+    "sources.desc": "Configuration readiness does not confirm a successful live data pull.",
     "sources.openConsole": "Open console",
     "sources.openTransparency": "Open transparency center",
     "sources.missing": "Needs config: {list}",
@@ -283,6 +285,8 @@ const ATR_DICT = {
   },
 
   zh: {
+    "sources.configured": "已配置",
+    "sources.unconfigured": "待接入",
     "orbital.index": "竞品信号",
     "orbital.pause": "暂停动画",
     "orbital.resume": "继续动画",
@@ -529,7 +533,7 @@ const ATR_DICT = {
     "ga4.property": "property {id}",
 
     "sources.title": "数据源状态",
-    "sources.desc": "配置 connector 后会从 demo 切到 live-ready。",
+    "sources.desc": "已配置表示具备连接条件，不代表已经成功获取真实数据。",
     "sources.openConsole": "打开控制台",
     "sources.openTransparency": "打开透明度中心",
     "sources.missing": "需要配置：{list}",

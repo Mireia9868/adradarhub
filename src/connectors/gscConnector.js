@@ -6,7 +6,7 @@ const { tr } = require("../i18n");
 //
 // 官方文档：https://developers.google.com/webmaster-tools/v1/searchanalytics/query
 // 配额：每个媒体资源 1,200 QPM / 每天 50,000 次请求（免费，够用）。
-const { getAccessToken } = require("../googleAuth");
+const { getAccessToken, getGoogleAuthStatus } = require("../googleAuth");
 
 const API_BASE = "https://searchconsole.googleapis.com/webmasters/v3";
 
@@ -285,33 +285,22 @@ function clampInt(value, min, max) {
   return Math.min(Math.max(Math.round(number), min), max);
 }
 
-function getGscStatus() {
-  const configured = Boolean(
-    (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) ||
-      process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
-      process.env.GOOGLE_SERVICE_ACCOUNT_FILE ||
-      (process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN)
-  ) && Boolean(process.env.GSC_SITE_URL || process.env.GSC_DEFAULT_DOMAIN);
-  const siteUrl = process.env.GSC_SITE_URL || "";
-
+function getGscStatus(query = {}) {
+  const auth = getGoogleAuthStatus();
+  const siteUrl = resolveSiteUrl(query.siteUrl || query.website || process.env.GSC_SITE_URL || process.env.GSC_DEFAULT_DOMAIN);
+  const configured = auth.configured && Boolean(siteUrl);
   return {
-    platform: "gsc",
-    label: "Google Search Console",
-    configured,
+    platform: "gsc", label: "Google Search Console", configured,
     mode: configured ? "live-ready" : "demo",
     route: configured ? "official-api" : "demo",
-    access: "service-account",
-    envKey: "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-    directKey: "GSC_SITE_URL",
-    missing: configured
-      ? []
-      : ["GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GSC_SITE_URL"],
+    access: auth.mode, authenticationConfigured: auth.configured,
+    envKey: "GOOGLE_SERVICE_ACCOUNT_JSON", directKey: "GSC_SITE_URL",
+    missing: [...auth.missing, ...(siteUrl ? [] : ["GSC_SITE_URL"])],
     detail: siteUrl ? tr("gsc.status.detail", { site: siteUrl }) : tr("gsc.status.notConfigured"),
     sourceUrl: "https://search.google.com/search-console"
   };
 }
 
-// 演示数据：让页面在任何配置状态下都能跑通，同时明确标注是 demo，避免被当成真数据。
 function createGscDemo(query = {}) {
   const host = String(query.website || query.siteUrl || "adradarhub.com")
     .replace(/^sc-domain:/, "")

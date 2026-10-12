@@ -266,3 +266,14 @@ Login → Forgot password → enter registered email → follow the email link �
 The endpoint returns the same message for unknown and registered emails. Delivery errors are logged without tokens or addresses; inspect Render logs and Resend delivery logs if mail does not arrive. Rate limiting is in-memory per instance (1 request/email/minute, 20/IP/hour); add a shared limiter before scaling to multiple instances. Behind Render's proxy, the IP limit uses the direct socket address conservatively.
 
 Run `npm run check:auth` and `node scripts/password-reset-check.js`. Production acceptance: verify `/api/auth/config` reports `recoveryEnabled: true`, receive a real reset email, reset once, reject reuse, and verify the old password/session fails. No live email has been sent by the offline tests.
+
+### Google 数据源接入检查
+
+运行 `node scripts/check-google-sources.js` 检查资源输入、鉴权完整性与演示数据标记。
+
+- 数据源页的「已配置」只表示配置齐全，实际报告的 `sourceMode` 才表示取数结果。
+- GSC 和 GA4 共用服务端 Google 凭证。推荐在 Render 的环境变量中设置 `GOOGLE_SERVICE_ACCOUNT_JSON`；不要提交私钥到 GitHub 或填写到前端。
+- GSC：启用 Search Console API，将服务账号加入对应资源的用户列表，填写准确的 `GSC_SITE_URL`（例如已验证的 `sc-domain:adradarhub.com` 或 `https://adradarhub.com/`）。
+- GA4：启用 Analytics Data API，将服务账号加入对应媒体资源的只读用户列表，填写纯数字 `GA4_PROPERTY_ID`。它与埋点用的 `GA4_MEASUREMENT_ID=G-...` 是两个不同的 ID。
+- 界面手动填写的 GSC 资源与 GA4 ID 会参与连接判断，无需一定设置服务器默认资源；仍需配置有效 Google 凭证。
+- `/api/google-connector` 是明确标为演示的样本管道。正式 Google 广告情报需要能返回真实数据的外部连接器；仅设置该样本地址不等于接通真实广告来源。

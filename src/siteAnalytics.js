@@ -15,10 +15,10 @@ async function createSiteAnalyticsReport(input = {}) {
 
   const warnings = [];
   const [gsc, ga4] = await Promise.all([
-    loadSource(getGscStatus(), () => fetchGscData({ siteUrl, sinceDays }), () =>
+    loadSource(getGscStatus({ siteUrl }), () => fetchGscData({ siteUrl, sinceDays }), () =>
       createGscDemo({ website: siteUrl || website, sinceDays })
     ),
-    loadSource(getGa4Status(), () => fetchGa4Data({ propertyId, sinceDays }), () =>
+    loadSource(getGa4Status({ propertyId }), () => fetchGa4Data({ propertyId, sinceDays }), () =>
       createGa4Demo({ website, sinceDays })
     )
   ]);

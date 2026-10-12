@@ -78,6 +78,27 @@ function authMode() {
   return "none";
 }
 
+// Safe configuration diagnostics shared by both Google reporting connectors.
+// Never return credential values or parser errors containing credential snippets.
+function getGoogleAuthStatus() {
+  try {
+    if (serviceAccount()) return { configured: true, mode: "service-account", missing: [] };
+  } catch {
+    const key = process.env.GOOGLE_SERVICE_ACCOUNT_FILE ? "GOOGLE_SERVICE_ACCOUNT_FILE" : "GOOGLE_SERVICE_ACCOUNT_JSON";
+    return { configured: false, mode: "invalid", missing: [key + " (invalid configuration)"] };
+  }
+  if (refreshTokenConfig()) return { configured: true, mode: "refresh-token", missing: [] };
+  let missing;
+  if (process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_REFRESH_TOKEN) {
+    missing = ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"].filter(key => !process.env[key]);
+  } else if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    missing = ["GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"].filter(key => !process.env[key]);
+  } else {
+    missing = ["GOOGLE_SERVICE_ACCOUNT_JSON (or service-account email + private key)"];
+  }
+  return { configured: false, mode: "none", missing };
+}
+
 // 取 access token。scopeKey 传 "gsc" 或 "ga4"（见 SCOPES）。
 async function getAccessToken(scopeKey) {
   const scopes = SCOPES[scopeKey];
@@ -173,6 +194,7 @@ function base64url(value) {
 module.exports = {
   getAccessToken,
   authMode,
+  getGoogleAuthStatus,
   serviceAccount,
   SCOPES
 };

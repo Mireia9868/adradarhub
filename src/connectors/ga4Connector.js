@@ -5,7 +5,7 @@ const { tr } = require("../i18n");
 //
 // 官方文档：https://developers.google.com/analytics/devguides/reporting/data/v1
 // 配额：每个媒体资源 5,000 token/小时 + 25,000/天（免费）。
-const { getAccessToken } = require("../googleAuth");
+const { getAccessToken, getGoogleAuthStatus } = require("../googleAuth");
 
 const API_BASE = "https://analyticsdata.googleapis.com/v1beta";
 
@@ -202,28 +202,17 @@ function clampInt(value, min, max) {
   return Math.min(Math.max(Math.round(number), min), max);
 }
 
-function getGa4Status() {
-  const configured =
-    Boolean(
-      (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) ||
-        process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
-        process.env.GOOGLE_SERVICE_ACCOUNT_FILE ||
-        (process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_REFRESH_TOKEN)
-    ) && Boolean(resolvePropertyId(process.env.GA4_PROPERTY_ID));
-  const propertyId = resolvePropertyId(process.env.GA4_PROPERTY_ID);
-
+function getGa4Status(query = {}) {
+  const auth = getGoogleAuthStatus();
+  const propertyId = resolvePropertyId(query.propertyId || process.env.GA4_PROPERTY_ID);
+  const configured = auth.configured && Boolean(propertyId);
   return {
-    platform: "ga4",
-    label: "Google Analytics 4",
-    configured,
+    platform: "ga4", label: "Google Analytics 4", configured,
     mode: configured ? "live-ready" : "demo",
     route: configured ? "official-api" : "demo",
-    access: "service-account",
-    envKey: "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-    directKey: "GA4_PROPERTY_ID",
-    missing: configured
-      ? []
-      : ["GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GA4_PROPERTY_ID"],
+    access: auth.mode, authenticationConfigured: auth.configured,
+    envKey: "GOOGLE_SERVICE_ACCOUNT_JSON", directKey: "GA4_PROPERTY_ID",
+    missing: [...auth.missing, ...(propertyId ? [] : ["GA4_PROPERTY_ID"])],
     detail: propertyId ? tr("ga4.status.detail", { id: propertyId }) : tr("ga4.status.notConfigured"),
     sourceUrl: "https://analytics.google.com/"
   };

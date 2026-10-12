@@ -2,6 +2,7 @@ const state = {
   report: null,
   iteration: null,
   site: null,
+  orbitPaused: false,
   filter: "all"
 };
 
@@ -935,22 +936,80 @@ function renderCompetitors() {
     .join("");
 }
 
-// The orbital presentation consumes the existing report; it never invents metrics.
+// B / Planetary flight: report data drives the planets and fixed name index.
+let orbitAnimationFrame = 0;
+let orbitElapsed = 0;
+let orbitLastTick = 0;
+let orbitBodies = [];
+let orbitTrails = [];
+const orbitMotionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+const orbitPaths = [[225,100,0,1],[185,78,1,-1],[130,52,2.2,1],[225,100,3.1,1],[185,78,4,-1],[130,52,5.3,1]];
+
+function orbitPoint(rx, ry, angle) {
+  const x = rx * Math.cos(angle), y = ry * Math.sin(angle), tilt = -Math.PI / 10;
+  return [250 + x * Math.cos(tilt) - y * Math.sin(tilt), 150 + x * Math.sin(tilt) + y * Math.cos(tilt)];
+}
+
+function drawOrbitPositions() {
+  const phase = orbitElapsed / 24000 * Math.PI * 2;
+  orbitBodies.forEach((node, i) => {
+    const [rx, ry, start, direction] = orbitPaths[i];
+    const angle = phase * direction + start;
+    const [x, y] = orbitPoint(rx, ry, angle);
+    node.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+    const points = Array.from({ length: 18 }, (_, k) => {
+      const [px, py] = orbitPoint(rx, ry, angle - direction * (17 - k) * 0.012);
+      return `${px.toFixed(2)},${py.toFixed(2)}`;
+    });
+    orbitTrails[i].setAttribute("points", points.join(" "));
+  });
+}
+
+function syncOrbitMotion() {
+  cancelAnimationFrame(orbitAnimationFrame);
+  orbitAnimationFrame = 0;
+  orbitLastTick = 0;
+  const reduced = orbitMotionPreference.matches;
+  const stopped = state.orbitPaused || reduced || document.hidden;
+  const target = document.querySelector("#orbitalMap");
+  target.classList.toggle("is-paused", stopped);
+  const button = document.querySelector("#orbitMotionToggle");
+  button.hidden = reduced || !orbitBodies.length;
+  button.textContent = t(state.orbitPaused ? "orbital.resume" : "orbital.pause");
+  button.setAttribute("aria-pressed", String(state.orbitPaused));
+  if (stopped || !orbitBodies.length) return;
+  function tick(now) {
+    if (orbitLastTick) orbitElapsed += Math.min(now - orbitLastTick, 100);
+    orbitLastTick = now;
+    drawOrbitPositions();
+    orbitAnimationFrame = requestAnimationFrame(tick);
+  }
+  orbitAnimationFrame = requestAnimationFrame(tick);
+}
+
 function renderOrbitalOverview() {
+  cancelAnimationFrame(orbitAnimationFrame);
   const target = document.querySelector("#orbitalMap");
   const report = state.report;
   const competitors = (report?.competitors || []).slice(0, 6);
-  const domain = report?.query?.domain || document.querySelector("#websiteInput").value.trim() || "—";
-  const slots = [[132, 73], [376, 59], [444, 160], [376, 238], [126, 236], [57, 153]];
+  const domain = String(report?.query?.domain || document.querySelector("#websiteInput").value.trim() || "—");
   const nodes = competitors.map((competitor, i) => {
-    const [x, y] = slots[i];
-    const label = String(competitor.domain || competitor.name || "");
-    const shown = label.length > 21 ? label.slice(0, 19) + "…" : label;
-    const overlap = Math.max(0, Math.min(100, Number(competitor.overlap) || 0));
-    return `<g><title>${escapeHtml(label)} · ${overlap}%</title><line class="orbit-guide" x1="250" y1="150" x2="${x}" y2="${y}"/><circle class="orbit-node" cx="${x}" cy="${y}" r="4"/><text class="orbit-text" text-anchor="middle" x="${x}" y="${y - 13}">${escapeHtml(shown)}</text><text class="orbit-sub" text-anchor="middle" x="${x}" y="${y + 19}">${String(i + 1).padStart(2, "0")} / ${overlap}%</text></g>`;
+    const label = String(competitor.name || competitor.domain || "—");
+    return `<polyline class="orbit-flight-trail" fill="none"/><g class="orbit-body"><title>${escapeHtml(label)}</title><circle class="orbit-node-halo" r="13" style="animation-delay:-${i * .8}s"/><circle class="orbit-node" r="6"/><text class="orbit-flight-id" x="11" y="-10">${String(i + 1).padStart(2,"0")}</text></g>`;
   }).join("");
-  target.setAttribute("aria-label", `${t("orbital.mapLabel")}: ${domain}${competitors.length ? ", " + competitors.map(c => c.domain || c.name).join(", ") : ", " + t("orbital.emptyRadar")}`);
-  target.innerHTML = `<svg viewBox="0 0 500 300" aria-hidden="true"><g transform="rotate(-18 250 150)"><ellipse class="orbit-ring" cx="250" cy="150" rx="225" ry="100"/><ellipse class="orbit-ring" cx="250" cy="150" rx="185" ry="78"/><ellipse class="orbit-ring" cx="250" cy="150" rx="130" ry="52"/><ellipse class="orbit-ring" cx="250" cy="150" rx="74" ry="30"/></g><line class="orbit-guide" x1="20" y1="150" x2="480" y2="150"/><line class="orbit-guide" x1="250" y1="20" x2="250" y2="280"/>${nodes}<circle class="orbit-core" cx="250" cy="150" r="15"/><circle cx="250" cy="150" r="24" class="orbit-ring"/><text class="orbit-text" text-anchor="middle" x="250" y="191">${escapeHtml(domain.length > 25 ? domain.slice(0, 23) + "…" : domain)}</text><text class="orbit-sub" text-anchor="middle" x="250" y="205">${escapeHtml(t("orbital.target"))}</text>${!competitors.length ? `<text class="orbit-empty" text-anchor="middle" x="250" y="264">${escapeHtml(t(report ? "orbital.noCompetitors" : "orbital.emptyRadar"))}</text>` : ""}</svg>`;
+  const index = competitors.map((competitor, i) => {
+    const label = String(competitor.name || competitor.domain || "—");
+    const domain = String(competitor.domain || "");
+    const overlap = Math.max(0, Math.min(100, Number(competitor.overlap) || 0));
+    return `<li title="${escapeHtml(label)} · ${escapeHtml(domain)}"><span class="orbit-index-id">${String(i + 1).padStart(2,"0")}</span><span class="orbit-index-name">${escapeHtml(label)}</span><span class="orbit-index-score">${overlap}%</span></li>`;
+  }).join("");
+  target.setAttribute("aria-label", `${t("orbital.mapLabel")}: ${domain}${competitors.length ? ", " + competitors.map(c => c.name || c.domain).join(", ") : ", " + t("orbital.emptyRadar")}`);
+  target.innerHTML = `<div class="orbit-flight-chart"><svg viewBox="0 0 500 300" aria-hidden="true"><g transform="rotate(-18 250 150)"><ellipse class="orbit-ring" cx="250" cy="150" rx="225" ry="100"/><ellipse class="orbit-ring" cx="250" cy="150" rx="185" ry="78"/><ellipse class="orbit-ring" cx="250" cy="150" rx="130" ry="52"/><ellipse class="orbit-ring" cx="250" cy="150" rx="74" ry="30"/></g><line class="orbit-guide" x1="250" y1="20" x2="250" y2="280"/>${nodes}<circle class="orbit-core-halo" cx="250" cy="150" r="32"/><circle class="orbit-core" cx="250" cy="150" r="16"/><circle cx="250" cy="150" r="24" class="orbit-ring"/>${!competitors.length ? `<text class="orbit-empty" text-anchor="middle" x="250" y="264">${escapeHtml(t(report ? "orbital.noCompetitors" : "orbital.emptyRadar"))}</text>` : ""}</svg><div class="orbit-target-caption"><strong>${escapeHtml(domain)}</strong><small>${escapeHtml(t("orbital.target"))}</small></div></div>${competitors.length ? `<div class="orbit-signal-index"><span class="technical-label">${escapeHtml(t("orbital.index"))}</span><ol>${index}</ol></div>` : ""}`;
+  target.classList.toggle("has-signals", Boolean(competitors.length));
+  orbitBodies = Array.from(target.querySelectorAll(".orbit-body"));
+  orbitTrails = Array.from(target.querySelectorAll(".orbit-flight-trail"));
+  drawOrbitPositions();
+  syncOrbitMotion();
   document.querySelector("#radarMode").textContent = t(!report ? "orbital.awaiting" : report.sourceMode === "demo" ? "orbital.demo" : "orbital.mixed");
   const overviewAds = document.querySelector("#overviewAds");
   const overviewTrends = document.querySelector("#overviewTrends");
@@ -972,6 +1031,12 @@ document.querySelectorAll("[data-open-section]").forEach(button => {
 document.querySelector("#websiteInput").addEventListener("input", () => {
   if (!state.report) renderOrbitalOverview();
 });
+document.querySelector("#orbitMotionToggle").addEventListener("click", () => {
+  state.orbitPaused = !state.orbitPaused;
+  syncOrbitMotion();
+});
+orbitMotionPreference.addEventListener("change", syncOrbitMotion);
+document.addEventListener("visibilitychange", syncOrbitMotion);
 document.addEventListener("atr:langchange", renderOrbitalOverview);
 renderOrbitalOverview();
 

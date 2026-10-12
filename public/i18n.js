@@ -7,6 +7,9 @@
  */
 const ATR_DICT = {
   en: {
+    "orbital.index": "SIGNAL INDEX",
+    "orbital.pause": "Pause animation",
+    "orbital.resume": "Resume animation",
     "orbital.eyebrow": "AD INTELLIGENCE / A WIDER PERSPECTIVE",
     "orbital.scan": "Domain scan",
     "orbital.mapLabel": "Competitor relationship orbit map",
@@ -280,6 +283,9 @@ const ATR_DICT = {
   },
 
   zh: {
+    "orbital.index": "竞品信号",
+    "orbital.pause": "暂停动画",
+    "orbital.resume": "继续动画",
     "orbital.eyebrow": "广告情报 / 更广阔的视角",
     "orbital.scan": "域名扫描",
     "orbital.mapLabel": "竞品关系轨道图",

@@ -465,6 +465,7 @@ function renderReport() {
   renderCompetitors();
   renderTrends();
   renderSources(state.report.sourceStatus);
+  renderOrbitalOverview();
 }
 
 async function runIteration() {
@@ -933,6 +934,46 @@ function renderCompetitors() {
     )
     .join("");
 }
+
+// The orbital presentation consumes the existing report; it never invents metrics.
+function renderOrbitalOverview() {
+  const target = document.querySelector("#orbitalMap");
+  const report = state.report;
+  const competitors = (report?.competitors || []).slice(0, 6);
+  const domain = report?.query?.domain || document.querySelector("#websiteInput").value.trim() || "—";
+  const slots = [[132, 73], [376, 59], [444, 160], [376, 238], [126, 236], [57, 153]];
+  const nodes = competitors.map((competitor, i) => {
+    const [x, y] = slots[i];
+    const label = String(competitor.domain || competitor.name || "");
+    const shown = label.length > 21 ? label.slice(0, 19) + "…" : label;
+    const overlap = Math.max(0, Math.min(100, Number(competitor.overlap) || 0));
+    return `<g><title>${escapeHtml(label)} · ${overlap}%</title><line class="orbit-guide" x1="250" y1="150" x2="${x}" y2="${y}"/><circle class="orbit-node" cx="${x}" cy="${y}" r="4"/><text class="orbit-text" text-anchor="middle" x="${x}" y="${y - 13}">${escapeHtml(shown)}</text><text class="orbit-sub" text-anchor="middle" x="${x}" y="${y + 19}">${String(i + 1).padStart(2, "0")} / ${overlap}%</text></g>`;
+  }).join("");
+  target.setAttribute("aria-label", `${t("orbital.mapLabel")}: ${domain}${competitors.length ? ", " + competitors.map(c => c.domain || c.name).join(", ") : ", " + t("orbital.emptyRadar")}`);
+  target.innerHTML = `<svg viewBox="0 0 500 300" aria-hidden="true"><g transform="rotate(-18 250 150)"><ellipse class="orbit-ring" cx="250" cy="150" rx="225" ry="100"/><ellipse class="orbit-ring" cx="250" cy="150" rx="185" ry="78"/><ellipse class="orbit-ring" cx="250" cy="150" rx="130" ry="52"/><ellipse class="orbit-ring" cx="250" cy="150" rx="74" ry="30"/></g><line class="orbit-guide" x1="20" y1="150" x2="480" y2="150"/><line class="orbit-guide" x1="250" y1="20" x2="250" y2="280"/>${nodes}<circle class="orbit-core" cx="250" cy="150" r="15"/><circle cx="250" cy="150" r="24" class="orbit-ring"/><text class="orbit-text" text-anchor="middle" x="250" y="191">${escapeHtml(domain.length > 25 ? domain.slice(0, 23) + "…" : domain)}</text><text class="orbit-sub" text-anchor="middle" x="250" y="205">${escapeHtml(t("orbital.target"))}</text>${!competitors.length ? `<text class="orbit-empty" text-anchor="middle" x="250" y="264">${escapeHtml(t(report ? "orbital.noCompetitors" : "orbital.emptyRadar"))}</text>` : ""}</svg>`;
+  document.querySelector("#radarMode").textContent = t(!report ? "orbital.awaiting" : report.sourceMode === "demo" ? "orbital.demo" : "orbital.mixed");
+  const overviewAds = document.querySelector("#overviewAds");
+  const overviewTrends = document.querySelector("#overviewTrends");
+  overviewAds.replaceChildren();
+  // Use the existing card renderer and preserve its event handlers on the source cards.
+  Array.from(adsGrid.querySelectorAll(".ad-card")).slice(0, 3).forEach(card => {
+    const clone = card.cloneNode(true);
+    clone.querySelectorAll(".brief-button, .brief-output").forEach(node => node.remove());
+    overviewAds.append(clone);
+  });
+  if (!overviewAds.children.length) overviewAds.innerHTML = `<div class="empty-state">${escapeHtml(t(report ? "ad.empty" : "orbital.emptyAds"))}</div>`;
+  overviewTrends.replaceChildren(...Array.from(trendList.children).slice(0, 3).map(node => node.cloneNode(true)));
+  if (!overviewTrends.children.length) overviewTrends.innerHTML = `<div class="empty-state">${escapeHtml(t("orbital.emptyTrends"))}</div>`;
+}
+
+document.querySelectorAll("[data-open-section]").forEach(button => {
+  button.addEventListener("click", () => document.querySelector(`.nav-item[data-section="${button.dataset.openSection}"]`)?.click());
+});
+document.querySelector("#websiteInput").addEventListener("input", () => {
+  if (!state.report) renderOrbitalOverview();
+});
+document.addEventListener("atr:langchange", renderOrbitalOverview);
+renderOrbitalOverview();
 
 function renderTrends() {
   const trends = state.report?.trends || [];

@@ -7,6 +7,26 @@
  */
 const ATR_DICT = {
   en: {
+    "orbital.eyebrow": "AD INTELLIGENCE / A WIDER PERSPECTIVE",
+    "orbital.scan": "Domain scan",
+    "orbital.mapLabel": "Competitor relationship orbit map",
+    "orbital.positions": "Positions show relationships, not market share",
+    "orbital.awaiting": "AWAITING SCAN",
+    "orbital.details": "Competitor details",
+    "orbital.creatives": "Creative signals",
+    "orbital.creativesDesc": "Explore creatives from your latest scan.",
+    "orbital.allAds": "View ad library →",
+    "orbital.trends": "Trend signals",
+    "orbital.trendsDesc": "Turn emerging signals into your next move.",
+    "orbital.emptyAds": "Run a domain scan to discover creative signals.",
+    "orbital.emptyTrends": "Trend opportunities will appear after a scan.",
+    "orbital.allTrends": "Explore trends →",
+    "orbital.emptyRadar": "Awaiting competitor signals",
+    "orbital.noCompetitors": "No competitors found in this scan",
+    "orbital.target": "TARGET",
+    "orbital.demo": "DEMO DATA",
+    "orbital.mixed": "MIXED SOURCES",
+
     "auth.forgot": "Forgot password?",
     "auth.titleForgot": "Forgot password",
     "auth.subForgot": "Enter your account email to receive a reset link valid for 30 minutes.",
@@ -31,9 +51,9 @@ const ATR_DICT = {
     "mode.idle": "Awaiting query",
     "mode.ready": "Connector ready",
 
-    "hero.title": "Overseas Ad Creative Iteration Platform",
+    "hero.title": "Spot the next move.",
     "hero.desc":
-      "Enter a brand domain to aggregate ad transparency sources. Import platform performance data and account-level creative requirements cascade into every iteration brief.",
+      "Scan global ads. Map competitors. Build your next creative.",
 
     "auth.quota": "{n} pulls left",
     "auth.quotaInit": "10 pulls left",
@@ -260,6 +280,26 @@ const ATR_DICT = {
   },
 
   zh: {
+    "orbital.eyebrow": "广告情报 / 更广阔的视角",
+    "orbital.scan": "域名扫描",
+    "orbital.mapLabel": "竞品关系轨道图",
+    "orbital.positions": "轨道位置仅展示关系，不代表市场份额",
+    "orbital.awaiting": "等待扫描",
+    "orbital.details": "竞品详情",
+    "orbital.creatives": "创意信号",
+    "orbital.creativesDesc": "查看最新扫描中的广告素材。",
+    "orbital.allAds": "查看广告库 →",
+    "orbital.trends": "趋势信号",
+    "orbital.trendsDesc": "将新兴信号转化为下一步行动。",
+    "orbital.emptyAds": "扫描域名后，在这里发现创意信号。",
+    "orbital.emptyTrends": "扫描完成后，这里将展示趋势机会。",
+    "orbital.allTrends": "探索趋势 →",
+    "orbital.emptyRadar": "等待竞品信号",
+    "orbital.noCompetitors": "本轮扫描未发现竞品",
+    "orbital.target": "目标网站",
+    "orbital.demo": "演示数据",
+    "orbital.mixed": "混合来源",
+
     "auth.forgot": "忘记密码？",
     "auth.titleForgot": "找回密码",
     "auth.subForgot": "输入注册邮箱，接收 30 分钟内有效的密码重置链接。",
@@ -284,8 +324,8 @@ const ATR_DICT = {
     "mode.idle": "等待查询",
     "mode.ready": "Connector ready",
 
-    "hero.title": "海外广告素材迭代平台",
-    "hero.desc": "输入品牌网站，聚合广告透明度来源；导入平台效果数据后，客户层级素材要求会自动继承到每一轮迭代 Brief。",
+    "hero.title": "洞察下一步机会。",
+    "hero.desc": "扫描全球广告，识别竞品信号，找到下一轮创意方向。",
 
     "auth.quota": "剩余 {n} 次",
     "auth.quotaInit": "剩余 10 次",

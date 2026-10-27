@@ -58,7 +58,15 @@ const ATR_DICT = {
 
     "hero.title": "Spot the next move.",
     "hero.desc":
-      "Scan global ads. Map competitors. Build your next creative.",
+      "Scan what competitors are running across Meta, Google, Bing, YouTube and TikTok — then turn your own campaign data into the next creative brief.",
+    "hero.proof":
+      "5 transparency libraries · US / UK / CA / AU · 10 free pulls a day · No card required",
+    "hero.sub": "Competitor ad intelligence across five ad libraries",
+    "footer.guide": "Ad library guide",
+    "footer.sources": "Data sources",
+    "footer.faq": "FAQ",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
 
     "auth.quota": "{n} pulls left",
     "auth.quotaInit": "10 pulls left",
@@ -268,6 +276,12 @@ const ATR_DICT = {
     "sources.openTransparency": "Open transparency center",
     "sources.missing": "Needs config: {list}",
     "sources.ready": "{key} ready",
+    "sources.badgeLive": "Live",
+    "sources.badgeDemo": "Demo",
+    "sources.liveCopy": "Results come from this platform's own API or public endpoint.",
+    "sources.demoCopy": "Sample data only — this connector is not credentialed yet. Nothing here is a measurement.",
+    "sources.liveTitle": "Live data from the platform API",
+    "sources.demoTitle": "Demo data — connector not configured yet",
 
     "ad.transparency": "Transparency center",
     "ad.landing": "Landing page",
@@ -335,7 +349,14 @@ const ATR_DICT = {
     "mode.ready": "Connector ready",
 
     "hero.title": "洞察下一步机会。",
-    "hero.desc": "扫描全球广告，识别竞品信号，找到下一轮创意方向。",
+    "hero.desc": "一次扫描拉取 Meta、Google、Bing、YouTube、TikTok 上竞品正在投放的广告，再把你的投放数据变成下一轮素材 Brief。",
+    "hero.proof": "5 个透明度库 · 覆盖 US / UK / CA / AU · 每天 10 次免费 · 不用绑卡",
+    "hero.sub": "覆盖五个广告库的竞品广告情报",
+    "footer.guide": "广告库指南",
+    "footer.sources": "数据源",
+    "footer.faq": "常见问题",
+    "footer.privacy": "隐私政策",
+    "footer.terms": "使用条款",
 
     "auth.quota": "剩余 {n} 次",
     "auth.quotaInit": "剩余 10 次",
@@ -537,7 +558,13 @@ const ATR_DICT = {
     "sources.openConsole": "打开控制台",
     "sources.openTransparency": "打开透明度中心",
     "sources.missing": "需要配置：{list}",
-    "sources.ready": "{key} ready",
+    "sources.ready": "{key} 已就绪",
+    "sources.badgeLive": "实采",
+    "sources.badgeDemo": "演示",
+    "sources.liveCopy": "结果来自该平台自己的 API 或公开接口。",
+    "sources.demoCopy": "仅为示例数据——该 connector 尚未配置凭证。这里的内容不是实测结果。",
+    "sources.liveTitle": "平台 API 实采数据",
+    "sources.demoTitle": "演示数据——connector 尚未配置",
 
     "ad.transparency": "透明度中心",
     "ad.landing": "落地页",

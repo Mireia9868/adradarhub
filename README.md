@@ -14,6 +14,30 @@ npm start
 http://localhost:4173
 ```
 
+## Content pages（静态内容页 / SEO）
+
+工作台本身是单页应用。为了让搜索引擎能收录工具以外的内容，`content/pages.js` 里维护了一份双语内容源，由构建脚本生成静态页面：
+
+```bash
+npm run build:pages     # 生成页面 + sitemap
+npm run check:content   # 构建后自检（meta、canonical、hreflang、内链、JSON-LD）
+```
+
+生成的产物（提交进仓库，同时也是 Render build 的一部分）：
+
+| 路径 | 内容 |
+| --- | --- |
+| `public/<slug>/index.html` | 英文版页面 |
+| `public/zh/<slug>/index.html` | 中文版页面 |
+| `public/404.html` | 404 页（服务端以 404 状态返回） |
+| `public/sitemap.xml` | 真实 URL + hreflang 备用链接 |
+
+当前页面：`ad-library`、`data-sources`、`faq`、`privacy`、`terms`。
+
+**新增一页** = 在 `content/pages.js` 里加一个对象（`slug` / `title` / `description` / `h1` / `lead` / `sections`），然后跑 `npm run check:content`。导航和页脚由 `nav`、`footerLinks` 两个数组统一控制，不要在页面里手写链接。
+
+改动内容页文案后必须重新构建，否则线上仍是旧 HTML。`server.js` 会把目录路由（`/ad-library`、`/ad-library/`）解析到对应目录下的 `index.html`；未知路径返回 `public/404.html`，`/api/*` 仍返回 JSON 错误。
+
 ## Deploy to adradarhub.com
 
 This project is configured for a Render Node Web Service with `render.yaml`.

@@ -1,0 +1,456 @@
+/* ==========================================================================
+   静态内容页（guides / legal / faq）样式
+   复用 styles.css 的设计 token，保持与工作台同一视觉语言。
+   ========================================================================== */
+
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(1100px 620px at 12% -10%, rgba(10, 114, 255, 0.12), transparent 60%),
+    radial-gradient(900px 520px at 88% 4%, rgba(0, 194, 240, 0.1), transparent 62%),
+    var(--bg-0);
+}
+
+.page-wrap {
+  width: min(1120px, 100% - 48px);
+  margin: 0 auto;
+}
+
+/* 顶栏 ------------------------------------------------------------------ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(16px);
+  background: rgba(245, 247, 252, 0.82);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header .page-wrap {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 64px;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.site-brand svg {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+}
+
+.site-brand small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.site-nav a {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  color: var(--ink);
+  background: rgba(10, 114, 255, 0.08);
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--accent);
+  background: rgba(10, 114, 255, 0.1);
+}
+
+.nav-cta {
+  margin-left: 8px;
+  padding: 9px 16px !important;
+  color: #fff !important;
+  background: var(--grad-main);
+  box-shadow: var(--glow);
+  font-weight: 600;
+}
+
+/* 正文 ------------------------------------------------------------------ */
+.page-main {
+  flex: 1;
+  padding: 56px 0 88px;
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 56px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .doc-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 20px;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-size: clamp(30px, 4.2vw, 46px);
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+  margin: 0 0 18px;
+}
+
+.lead {
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0 0 28px;
+  max-width: 68ch;
+}
+
+.doc-body h2 {
+  font-size: 24px;
+  letter-spacing: -0.015em;
+  margin: 44px 0 14px;
+  scroll-margin-top: 84px;
+}
+
+.doc-body h3 {
+  font-size: 17px;
+  margin: 28px 0 10px;
+}
+
+.doc-body p,
+.doc-body li {
+  font-size: 16px;
+  line-height: 1.75;
+  color: #1e2a3f;
+}
+
+.doc-body p {
+  margin: 0 0 16px;
+  max-width: 72ch;
+}
+
+.doc-body ul,
+.doc-body ol {
+  margin: 0 0 18px;
+  padding-left: 22px;
+  max-width: 72ch;
+}
+
+.doc-body li {
+  margin-bottom: 8px;
+}
+
+.doc-body a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.doc-body code {
+  font-family: "SFMono-Regular", ui-monospace, Menlo, monospace;
+  font-size: 0.9em;
+  background: rgba(15, 23, 42, 0.06);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.doc-body strong {
+  font-weight: 650;
+}
+
+.card-box {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin: 22px 0;
+  box-shadow: var(--shadow);
+}
+
+.card-box > :last-child {
+  margin-bottom: 0;
+}
+
+.note {
+  border-left: 3px solid var(--accent);
+  background: rgba(10, 114, 255, 0.06);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 14px 18px;
+  margin: 22px 0;
+}
+
+.note p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* 表格 ------------------------------------------------------------------ */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin: 22px 0;
+  background: var(--surface-2);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  min-width: 640px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(15, 23, 42, 0.03);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-live {
+  color: #08694f;
+  background: rgba(14, 159, 115, 0.14);
+}
+
+.badge-demo {
+  color: #8a4b06;
+  background: rgba(201, 122, 6, 0.16);
+}
+
+.badge-beta {
+  color: #4b1fd8;
+  background: rgba(109, 60, 245, 0.14);
+}
+
+/* FAQ ------------------------------------------------------------------- */
+.faq-item {
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+
+.faq-item h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.faq-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15.5px;
+}
+
+/* 侧栏 ------------------------------------------------------------------ */
+.doc-aside {
+  position: sticky;
+  top: 88px;
+  font-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .doc-aside {
+    position: static;
+    order: 2;
+  }
+}
+
+.doc-aside h2 {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0 0 12px;
+}
+
+.doc-aside ul {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+.doc-aside li {
+  margin-bottom: 4px;
+}
+
+.doc-aside a {
+  display: block;
+  padding: 6px 0;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.doc-aside a:hover {
+  color: var(--accent);
+}
+
+.aside-cta {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.aside-cta p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aside-cta a.btn {
+  display: block;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--grad-main);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--glow);
+}
+
+/* 页脚 ------------------------------------------------------------------ */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 32px 0 40px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.site-footer .page-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  align-items: center;
+}
+
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-left: auto;
+}
+
+.site-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}
+
+.updated {
+  font-size: 13px;
+  color: var(--dim);
+  margin: 0 0 26px;
+}
+
+.lang-link {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 8px 10px;
+}
+
+.lang-link:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .site-header .page-wrap {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 0;
+  }
+  .site-nav {
+    margin-left: 0;
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .site-nav a {
+    white-space: nowrap;
+  }
+  .page-main {
+    padding: 36px 0 64px;
+  }
+}

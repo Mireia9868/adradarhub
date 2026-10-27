@@ -295,30 +295,41 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, report);
     }
 
-    if (req.method !== "GET") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
       return sendJson(res, 405, { error: "method_not_allowed" });
     }
 
     const filePath = resolveStaticPath(url.pathname);
-    if (!filePath) {
-      return sendJson(res, 404, { error: "not_found" });
+    const file = filePath
+      ? await fs.readFile(filePath).catch(error => {
+          if (error.code === "ENOENT" || error.code === "EISDIR") return null;
+          throw error;
+        })
+      : null;
+
+    if (!file) {
+      // /api/* 保持 JSON 错误；其余路径返回可浏览的 HTML 404，避免爬虫拿到裸 JSON。
+      if (url.pathname.startsWith("/api/")) {
+        return sendJson(res, 404, { error: "not_found" });
+      }
+      return sendNotFound(res, req.method === "HEAD");
     }
 
-    const file = await fs.readFile(filePath).catch(error => {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    });
-    if (!file) {
-      return sendJson(res, 404, { error: "not_found" });
-    }
     const ext = path.extname(filePath);
     if (ext === ".html") {
-      res.writeHead(200, { "content-type": mimeTypes[ext] });
-      res.end(injectSiteTags(file.toString("utf8")));
+      const html = injectSiteTags(file.toString("utf8"));
+      res.writeHead(200, {
+        "content-type": mimeTypes[ext],
+        "content-length": Buffer.byteLength(html)
+      });
+      res.end(req.method === "HEAD" ? undefined : html);
       return;
     }
-    res.writeHead(200, { "content-type": mimeTypes[ext] || "application/octet-stream" });
-    res.end(file);
+    res.writeHead(200, {
+      "content-type": mimeTypes[ext] || "application/octet-stream",
+      "content-length": file.length
+    });
+    res.end(req.method === "HEAD" ? undefined : file);
   } catch (error) {
     const status = error.statusCode || 500;
     sendJson(res, status, {
@@ -333,11 +344,41 @@ server.listen(port, host, () => {
 });
 
 function resolveStaticPath(pathname) {
-  const normalized = pathname === "/" ? "/index.html" : pathname;
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+  const normalized = decoded === "/" ? "/index.html" : decoded;
   const safePath = path.normalize(normalized).replace(/^(\.\.[/\\])+/, "");
-  const filePath = path.join(publicDir, safePath);
+  let filePath = path.join(publicDir, safePath);
+  // 目录式路由（/ad-library/ 或 /ad-library）都解析到目录下的 index.html
+  if (!path.extname(filePath)) {
+    filePath = path.join(filePath, "index.html");
+  }
   if (!filePath.startsWith(publicDir)) return null;
   return filePath;
+}
+
+async function sendNotFound(res, headOnly) {
+  const notFoundPath = path.join(publicDir, "404.html");
+  let html = null;
+  try {
+    html = injectSiteTags(await fs.readFile(notFoundPath, "utf8"));
+  } catch {
+    html = null;
+  }
+  if (!html) {
+    res.writeHead(404, { "content-type": "application/json; charset=utf-8" });
+    res.end(headOnly ? undefined : JSON.stringify({ error: "not_found" }));
+    return;
+  }
+  res.writeHead(404, {
+    "content-type": "text/html; charset=utf-8",
+    "content-length": Buffer.byteLength(html)
+  });
+  res.end(headOnly ? undefined : html);
 }
 
 // GA4 统计代码与 GSC 验证 meta 只在服务端注入：密钥/ID 不进仓库，

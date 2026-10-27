@@ -2245,3 +2245,100 @@ button {
 [hidden] {
   display: none !important;
 }
+
+/* ==========================================================================
+   内容页脚 + hero 证明行（2026-10 内容优化）
+   工作台底部加一条可抓取的站内链接带，guide/legal 页与首页互链。
+   ========================================================================== */
+
+.hero-proof {
+  margin: 10px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 18px 28px 22px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-left: auto;
+}
+
+.app-footer a {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+}
+
+.app-footer a:hover,
+.app-footer a:focus-visible {
+  color: var(--accent);
+  border-bottom-color: rgba(10, 114, 255, 0.4);
+}
+
+@media (max-width: 720px) {
+  .app-footer {
+    padding: 16px 18px 20px;
+  }
+  .app-footer nav {
+    margin-left: 0;
+    gap: 8px 14px;
+  }
+}
+
+/* 数据源实采 / 演示徽章：平台勾选框和信息卡共用 ------------------------- */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.platform-row label .source-badge {
+  margin-left: 5px;
+}
+
+.source-badge.is-live {
+  color: #08694f;
+  background: rgba(14, 159, 115, 0.16);
+}
+
+.source-badge.is-demo {
+  color: #8a4b06;
+  background: rgba(201, 122, 6, 0.18);
+}
+
+.source-item .source-badge {
+  margin-left: 8px;
+}
+
+.hero-h1-sub {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 62ch;
+}

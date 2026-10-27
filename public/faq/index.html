@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frequently asked questions · AdRadarHub</title>
+    <meta name="description" content="What AdRadarHub does, which platforms it covers, how the free quota works, and what it deliberately does not claim to do." />
+    <link rel="canonical" href="https://adradarhub.com/faq/" />
+    <link rel="alternate" hreflang="en" href="https://adradarhub.com/faq/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/faq/" />
+    <link rel="alternate" hreflang="x-default" href="https://adradarhub.com/faq/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="AdRadarHub" />
+    <meta property="og:title" content="Frequently asked questions" />
+    <meta property="og:description" content="What AdRadarHub does, which platforms it covers, how the free quota works, and what it deliberately does not claim to do." />
+    <meta property="og:url" content="https://adradarhub.com/faq/" />
+    <meta property="og:image" content="https://adradarhub.com/og/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Frequently asked questions" />
+    <meta name="twitter:description" content="What AdRadarHub does, which platforms it covers, how the free quota works, and what it deliberately does not claim to do." />
+    <meta name="twitter:image" content="https://adradarhub.com/og/og-default.png" />
+    <meta name="theme-color" content="#f5f7fc" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages.css" />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://adradarhub.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Frequently asked questions",
+          "item": "https://adradarhub.com/faq/"
+        }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://adradarhub.com/faq/#webpage",
+      "url": "https://adradarhub.com/faq/",
+      "name": "Frequently asked questions",
+      "description": "What AdRadarHub does, which platforms it covers, how the free quota works, and what it deliberately does not claim to do.",
+      "inLanguage": "en",
+      "dateModified": "2026-10-28",
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://adradarhub.com/#website",
+        "name": "AdRadarHub",
+        "url": "https://adradarhub.com/"
+      },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "AdRadarHub",
+        "applicationCategory": "BusinessApplication"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://adradarhub.com/faq/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What exactly does AdRadarHub do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You enter a domain and a market. It pulls what that advertiser and its closest competitors are running across ad transparency libraries, ranks the creatives by signal strength, and turns the result into a next-round creative brief."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which platforms are covered?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Meta, Google, Bing, YouTube and TikTok for ad intelligence, plus Google Search Console and GA4 for your own site performance. Current live/demo status per platform is on the data sources page."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the data real or sample data?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Results are labelled. When a connector is credentialed you get live data from the platform; when it is not, the interface marks the output as demo. We never present generated numbers as measurements."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the free quota work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ten pulls per day per account, resetting at midnight UTC+8. A scan costs one pull no matter how many platforms you select. Image and text generation share the same pool."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it cost anything?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is free while in beta, including the daily quota. There is no card required and no paid tier announced yet."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it see a competitor's spend or ROAS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, and no tool can. Those numbers belong to the advertiser's account. What you get is creative, timing, placement and landing page — enough to reconstruct the strategy, not the P&L."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the creative iteration module for?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It merges client-level rules (brand, required elements, banned claims, market and platform constraints) with your own campaign CSV, then writes a brief that separates what to keep, what to change, and what to test next."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need an account?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "An account unlocks the daily quota and keeps your scan history. Signing up only needs an email and a password of at least eight characters."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where does my data go?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Account data is stored in Supabase Postgres. API keys for Google and the AI providers live server-side only and are never sent to the browser. Details are on the privacy page."
+          }
+        }
+      ]
+    }
+  ]
+}
+    </script>
+    <!--SITE_TAGS-->
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+      <div class="page-wrap">
+        <a class="site-brand" href="/">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><ellipse cx="24" cy="24" rx="23" ry="10" transform="rotate(-48 24 24)" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="11" cy="29" r="3" fill="currentColor"/><circle cx="34" cy="10" r="3" fill="currentColor"/><circle cx="28" cy="29" r="2.5" fill="currentColor"/></svg>
+          <span>AdRadarHub<small>Overseas ads intelligence</small></span>
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/ad-library/">Ad library guide</a><a href="/data-sources/">Data sources</a><a href="/faq/" aria-current="page">FAQ</a>
+          <a class="nav-cta" href="/">Open the tool</a>
+          <a class="lang-link" href="/zh/faq/" hreflang="zh-CN" rel="alternate">中文</a>
+        </nav>
+      </div>
+    </header>
+      <main class="page-main">
+        <div class="page-wrap doc-grid">
+          <article class="doc-body">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+              <a href="/">Home</a>
+              <span aria-hidden="true">/</span>
+              <span>Frequently asked questions</span>
+            </nav>
+            <p class="eyebrow">FAQ</p>
+            <h1>Frequently asked questions</h1>
+            <p class="lead">Short answers to the questions that come up before someone runs their first scan.</p>
+            <p class="updated">Last updated · 2026-10-28</p>
+            <div class="faq-list"><div class="faq-item">
+          <h3 id="q1">What exactly does AdRadarHub do?</h3>
+          <p>You enter a domain and a market. It pulls what that advertiser and its closest competitors are running across ad transparency libraries, ranks the creatives by signal strength, and turns the result into a next-round creative brief.</p>
+        </div><div class="faq-item">
+          <h3 id="q2">Which platforms are covered?</h3>
+          <p>Meta, Google, Bing, YouTube and TikTok for ad intelligence, plus Google Search Console and GA4 for your own site performance. Current live/demo status per platform is on the data sources page.</p>
+        </div><div class="faq-item">
+          <h3 id="q3">Is the data real or sample data?</h3>
+          <p>Results are labelled. When a connector is credentialed you get live data from the platform; when it is not, the interface marks the output as demo. We never present generated numbers as measurements.</p>
+        </div><div class="faq-item">
+          <h3 id="q4">How does the free quota work?</h3>
+          <p>Ten pulls per day per account, resetting at midnight UTC+8. A scan costs one pull no matter how many platforms you select. Image and text generation share the same pool.</p>
+        </div><div class="faq-item">
+          <h3 id="q5">Does it cost anything?</h3>
+          <p>It is free while in beta, including the daily quota. There is no card required and no paid tier announced yet.</p>
+        </div><div class="faq-item">
+          <h3 id="q6">Can it see a competitor's spend or ROAS?</h3>
+          <p>No, and no tool can. Those numbers belong to the advertiser's account. What you get is creative, timing, placement and landing page — enough to reconstruct the strategy, not the P&L.</p>
+        </div><div class="faq-item">
+          <h3 id="q7">What is the creative iteration module for?</h3>
+          <p>It merges client-level rules (brand, required elements, banned claims, market and platform constraints) with your own campaign CSV, then writes a brief that separates what to keep, what to change, and what to test next.</p>
+        </div><div class="faq-item">
+          <h3 id="q8">Do I need an account?</h3>
+          <p>An account unlocks the daily quota and keeps your scan history. Signing up only needs an email and a password of at least eight characters.</p>
+        </div><div class="faq-item">
+          <h3 id="q9">Where does my data go?</h3>
+          <p>Account data is stored in Supabase Postgres. API keys for Google and the AI providers live server-side only and are never sent to the browser. Details are on the privacy page.</p>
+        </div></div>
+          </article>
+          
+        </div>
+      </main>
+      <footer class="site-footer">
+      <div class="page-wrap">
+        <span>© 2026 AdRadarHub · Overseas ads intelligence</span>
+        <nav aria-label="Footer"><a href="/ad-library/">Ad library guide</a><a href="/data-sources/">Data sources</a><a href="/faq/">FAQ</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+      </div>
+    </footer>
+    </div>
+    <script>
+      // 语言偏好与工作台保持一致（?lang 优先，其次 localStorage）
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var forced = params.get("lang");
+        if (forced) localStorage.setItem("atr_lang", forced);
+      })();
+    </script>
+  </body>
+</html>

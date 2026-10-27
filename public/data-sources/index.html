@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Data sources, coverage and limits · AdRadarHub</title>
+    <meta name="description" content="Exactly where each number on AdRadarHub comes from: which platform API, whether it is live or demo, how often it refreshes, and what it cannot see." />
+    <link rel="canonical" href="https://adradarhub.com/data-sources/" />
+    <link rel="alternate" hreflang="en" href="https://adradarhub.com/data-sources/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/data-sources/" />
+    <link rel="alternate" hreflang="x-default" href="https://adradarhub.com/data-sources/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="AdRadarHub" />
+    <meta property="og:title" content="Data sources, coverage and limits" />
+    <meta property="og:description" content="Exactly where each number on AdRadarHub comes from: which platform API, whether it is live or demo, how often it refreshes, and what it cannot see." />
+    <meta property="og:url" content="https://adradarhub.com/data-sources/" />
+    <meta property="og:image" content="https://adradarhub.com/og/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Data sources, coverage and limits" />
+    <meta name="twitter:description" content="Exactly where each number on AdRadarHub comes from: which platform API, whether it is live or demo, how often it refreshes, and what it cannot see." />
+    <meta name="twitter:image" content="https://adradarhub.com/og/og-default.png" />
+    <meta name="theme-color" content="#f5f7fc" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages.css" />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://adradarhub.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Data sources, coverage and limits",
+          "item": "https://adradarhub.com/data-sources/"
+        }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://adradarhub.com/data-sources/#webpage",
+      "url": "https://adradarhub.com/data-sources/",
+      "name": "Data sources, coverage and limits",
+      "description": "Exactly where each number on AdRadarHub comes from: which platform API, whether it is live or demo, how often it refreshes, and what it cannot see.",
+      "inLanguage": "en",
+      "dateModified": "2026-10-28",
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://adradarhub.com/#website",
+        "name": "AdRadarHub",
+        "url": "https://adradarhub.com/"
+      },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "AdRadarHub",
+        "applicationCategory": "BusinessApplication"
+      }
+    }
+  ]
+}
+    </script>
+    <!--SITE_TAGS-->
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+      <div class="page-wrap">
+        <a class="site-brand" href="/">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><ellipse cx="24" cy="24" rx="23" ry="10" transform="rotate(-48 24 24)" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="11" cy="29" r="3" fill="currentColor"/><circle cx="34" cy="10" r="3" fill="currentColor"/><circle cx="28" cy="29" r="2.5" fill="currentColor"/></svg>
+          <span>AdRadarHub<small>Overseas ads intelligence</small></span>
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/ad-library/">Ad library guide</a><a href="/data-sources/" aria-current="page">Data sources</a><a href="/faq/">FAQ</a>
+          <a class="nav-cta" href="/">Open the tool</a>
+          <a class="lang-link" href="/zh/data-sources/" hreflang="zh-CN" rel="alternate">中文</a>
+        </nav>
+      </div>
+    </header>
+      <main class="page-main">
+        <div class="page-wrap doc-grid">
+          <article class="doc-body">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+              <a href="/">Home</a>
+              <span aria-hidden="true">/</span>
+              <span>Data sources, coverage and limits</span>
+            </nav>
+            <p class="eyebrow">Transparency</p>
+            <h1>Data sources, coverage and limits</h1>
+            <p class="lead">An ad intelligence tool is only as trustworthy as its provenance. This page lists every source we query, whether it is currently live, and where the data stops being authoritative.</p>
+            <p class="updated">Last updated · 2026-10-28</p>
+            <h2 id="coverage">Coverage at a glance</h2>
+<p>Status below reflects the production deployment and is refreshed whenever a connector changes. A <span class="badge badge-live">Live</span> badge means results come from the platform's own API or public endpoint. <span class="badge badge-demo">Demo</span> means the endpoint is not credentialed yet and the UI is showing sample data — clearly labelled in the interface so a demo result is never mistaken for a real one.</p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Platform</th><th scope="col">Source</th><th scope="col">Access</th><th scope="col">Status</th><th scope="col">What it gives you</th></tr></thead><tbody><tr><td>Meta</td><td>Meta Ad Library API</td><td>Official API token</td><td><span class="badge badge-demo">Demo</span></td><td>Creatives, start dates, placements, landing pages</td></tr><tr><td>Google</td><td>Ads Transparency Center</td><td>External connector</td><td><span class="badge badge-live">Live</span></td><td>Creative, format, region, first/last seen</td></tr><tr><td>Bing</td><td>Microsoft Ad Library API</td><td>Official public API</td><td><span class="badge badge-live">Live</span></td><td>Ad copy, advertiser, live dates</td></tr><tr><td>YouTube</td><td>YouTube Data API v3</td><td>Official API key</td><td><span class="badge badge-live">Live</span></td><td>Video metadata, channel, views, duration</td></tr><tr><td>TikTok</td><td>Third-party provider</td><td>Licensed data provider</td><td><span class="badge badge-live">Live</span></td><td>Video metadata and engagement signals</td></tr><tr><td>Search Console</td><td>Google Search Console API</td><td>Service account</td><td><span class="badge badge-live">Live</span></td><td>Queries, impressions, clicks, positions</td></tr><tr><td>Analytics</td><td>GA4 Data API</td><td>Service account</td><td><span class="badge badge-live">Live</span></td><td>Channels, landing pages, conversions</td></tr></tbody></table></div>
+<h2 id="demo">Why some sources are in demo mode</h2>
+<p>Two of the libraries we query are not open by default. Meta's Ad Library API requires a token tied to a verified identity, and Google's transparency data has no anonymous public endpoint. Until those credentials are issued and configured server-side, the site runs those connectors in demo mode and labels the output.</p>
+<p>We would rather show a labelled demo than a quietly fabricated number. If a source you need is still in demo, the data-source panel inside the app tells you exactly which environment variable is missing.</p>
+<h2 id="limits">What this data cannot tell you</h2>
+<ul>
+<li><strong>No spend figures</strong> for commercial ads. Political ads disclose ranges; commercial ones do not.</li>
+<li><strong>No performance metrics.</strong> CTR, CVR, CPA and ROAS belong to the advertiser. Any tool claiming to show a competitor's ROAS is inferring, not measuring.</li>
+<li><strong>No targeting details.</strong> You see the creative, not the audience, bid or budget.</li>
+<li><strong>Snapshot history.</strong> Libraries show current state and dates, not a full day-by-day archive.</li>
+<li><strong>Deduplication is heuristic.</strong> The same creative reused across campaigns can appear more than once.</li>
+</ul>
+<p>Our iteration module works around the last gap: you import your own campaign CSV, and the platform metrics come from your account rather than being guessed from a competitor's public footprint.</p>
+<h2 id="refresh">Freshness and quota</h2>
+<p>Scans are executed on demand — nothing is pre-crawled and cached, so a result reflects the moment you asked for it. Free accounts get ten pulls per day, resetting at midnight UTC+8. Each scan counts once regardless of how many platforms you select; image generation and text generation draw from the same daily pool.</p>
+<p>Analytics pulls (Search Console / GA4) run against the service account you configure and are limited by Google's own API quotas, not by us.</p>
+          </article>
+          <aside class="doc-aside">
+        <h2>On this page</h2>
+        <ul><li><a href="#coverage">Coverage at a glance</a></li><li><a href="#demo">Why some sources are in demo mode</a></li><li><a href="#limits">What this data cannot tell you</a></li><li><a href="#refresh">Freshness and quota</a></li></ul>
+        <div class="aside-cta">
+          <p>See the live status of every connector inside the app.</p>
+          <a class="btn" href="/#sources">Run a scan</a>
+        </div>
+      </aside>
+        </div>
+      </main>
+      <footer class="site-footer">
+      <div class="page-wrap">
+        <span>© 2026 AdRadarHub · Overseas ads intelligence</span>
+        <nav aria-label="Footer"><a href="/ad-library/">Ad library guide</a><a href="/data-sources/">Data sources</a><a href="/faq/">FAQ</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+      </div>
+    </footer>
+    </div>
+    <script>
+      // 语言偏好与工作台保持一致（?lang 优先，其次 localStorage）
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var forced = params.get("lang");
+        if (forced) localStorage.setItem("atr_lang", forced);
+      })();
+    </script>
+  </body>
+</html>

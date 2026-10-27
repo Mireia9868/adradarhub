@@ -402,6 +402,8 @@ async function reloadSiteForLang() {
 }
 
 initLangSwitch();
+syncFooterLang();
+document.addEventListener("atr:langchange", syncFooterLang);
 loadSourceStatus();
 initAuth().then(signedIn => {
   if (signedIn) {
@@ -450,6 +452,16 @@ async function loadSourceStatus() {
   const status = await response.json();
   renderSources(status);
 }
+
+// 页脚 / 指南页链接跟随语言：中文界面指向 /zh/ 版本，英文界面指向根路径，
+// 保持语言一致，同时让爬虫在两种语言的页面之间都能找到互链。
+function syncFooterLang() {
+  document.querySelectorAll("[data-zh-href]").forEach(link => {
+    if (!link.dataset.enHref) link.dataset.enHref = link.getAttribute("href") || "/";
+    link.setAttribute("href", ATR_LANG === "zh" ? link.dataset.zhHref : link.dataset.enHref);
+  });
+}
+
 
 function renderReport() {
   const { summary } = state.report;
@@ -1067,8 +1079,11 @@ function renderSources(status) {
         <article class="source-item">
           <div class="item-top">
             <strong>${escapeHtml(source.label)}</strong>
-            <span class="score">${escapeHtml(t(source.configured ? "sources.configured" : "sources.unconfigured"))}</span>
+            <span class="source-badge ${source.configured ? "is-live" : "is-demo"}">${escapeHtml(
+              t(source.configured ? "sources.badgeLive" : "sources.badgeDemo")
+            )}</span>
           </div>
+          <p class="item-copy">${escapeHtml(t(source.configured ? "sources.liveCopy" : "sources.demoCopy"))}</p>
           <p class="item-copy">${escapeHtml(source.route)} · ${escapeHtml(source.mode)} · ${escapeHtml(source.access)}</p>
           <p class="item-copy">${escapeHtml(renderMissingConfig(source))}</p>
           <a href="${source.sourceUrl}" target="_blank" rel="noreferrer">${escapeHtml(
@@ -1078,7 +1093,31 @@ function renderSources(status) {
       `
     )
     .join("");
+  annotatePlatformStatus(status);
 }
+
+// 平台勾选框旁标注实采 / 演示状态：用户在第一屏就知道哪个源还没接通，
+// 而不是等扫描完发现结果是示例数据。
+function annotatePlatformStatus(status) {
+  if (!status) return;
+  document.querySelectorAll('.platform-row label input[name="platform"]').forEach(input => {
+    const label = input.closest("label");
+    if (!label) return;
+    const source = status[input.value];
+    if (!source) return;
+    let badge = label.querySelector(".source-badge");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "source-badge";
+      label.append(badge);
+    }
+    badge.classList.toggle("is-live", Boolean(source.configured));
+    badge.classList.toggle("is-demo", !source.configured);
+    badge.textContent = t(source.configured ? "sources.badgeLive" : "sources.badgeDemo");
+    label.title = t(source.configured ? "sources.liveTitle" : "sources.demoTitle");
+  });
+}
+
 
 function renderMissingConfig(source) {
   if (!source.missing || source.missing.length === 0) {

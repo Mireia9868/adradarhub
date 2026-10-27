@@ -1,33 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://adradarhub.com/</loc>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://adradarhub.com/#ads</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://adradarhub.com/ad-library/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/ad-library/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/ad-library/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/ad-library/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://adradarhub.com/#trends</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://adradarhub.com/zh/ad-library/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/ad-library/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/ad-library/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/ad-library/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://adradarhub.com/#site</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://adradarhub.com/data-sources/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/data-sources/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/data-sources/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/data-sources/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://adradarhub.com/#iteration</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://adradarhub.com/zh/data-sources/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/data-sources/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/data-sources/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/data-sources/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://adradarhub.com/#generate</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://adradarhub.com/faq/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/faq/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/faq/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/faq/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://adradarhub.com/zh/faq/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/faq/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/faq/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/faq/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://adradarhub.com/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/privacy/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/privacy/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/privacy/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://adradarhub.com/zh/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/privacy/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/privacy/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/privacy/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://adradarhub.com/terms/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/terms/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/terms/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/terms/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://adradarhub.com/zh/terms/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://adradarhub.com/terms/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://adradarhub.com/zh/terms/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://adradarhub.com/terms/" />
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>
